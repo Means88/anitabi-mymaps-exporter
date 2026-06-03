@@ -1,6 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { copyFileSync, mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const extensionEntries = new Set(["background", "content"]);
 
 export default defineConfig({
   base: "",
@@ -15,10 +18,6 @@ export default defineConfig({
           response.setHeader("cache-control", "no-store");
           response.end(readFileSync("public/data/search-index.json"));
         });
-      },
-      closeBundle() {
-        mkdirSync("dist/src", { recursive: true });
-        copyFileSync("src/exporter-core.js", "dist/src/exporter-core.js");
       }
     }
   ],
@@ -35,6 +34,21 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        app: resolve(__dirname, "index.html"),
+        popup: resolve(__dirname, "src/popup.html"),
+        background: resolve(__dirname, "src/extension/background.ts"),
+        content: resolve(__dirname, "src/extension/content.ts")
+      },
+      output: {
+        entryFileNames(chunk) {
+          return extensionEntries.has(chunk.name) ? "extension/[name].js" : "assets/[name]-[hash].js";
+        },
+        chunkFileNames: "assets/[name]-[hash].js",
+        assetFileNames: "assets/[name]-[hash][extname]"
+      }
+    }
   }
 });

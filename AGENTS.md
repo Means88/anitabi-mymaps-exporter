@@ -7,14 +7,14 @@ Anitabi My Maps Exporter is a shared React + TypeScript UI plus a Chrome Manifes
 ## Architecture
 
 - Web app entry: `src/main.tsx`
-- Shared export/search logic: `src/exporter-core.js`
+- Shared export/search logic: `src/core/`
 - Styles: `src/app.css`
-- Chrome extension shell: `manifest.json`, `src/content-script.js`, `src/background.js`, `src/popup.js`, `src/app.html`
+- Chrome extension shell: `manifest.json`, `src/extension/`, `src/popup.html`, `src/app.html`
 - Cloudflare Pages Functions:
-  - `functions/api/anitabi/[[path]].js` proxies stable Anitabi API detail routes.
-  - `functions/api/search-index.js` returns the local static search index for compatibility.
+  - `functions/api/anitabi/[[path]].ts` proxies stable Anitabi API detail routes.
+  - `functions/api/search-index.ts` returns the local static search index for compatibility.
 - Static search index: `public/data/search-index.json`
-- Search index generator: `scripts/build-search-index.mjs`
+- Search index generator: `scripts/build-search-index.ts`
 
 ## Development
 
@@ -23,6 +23,7 @@ Use Node.js 24+ with Corepack-enabled pnpm 11.
 ```sh
 corepack pnpm install
 corepack pnpm dev
+corepack pnpm lint
 corepack pnpm typecheck
 corepack pnpm build
 corepack pnpm test

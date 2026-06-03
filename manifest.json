@@ -5,10 +5,11 @@
   "version": "0.1.0",
   "action": {
     "default_title": "Anitabi Exporter",
-    "default_popup": "src/popup.html"
+    "default_popup": "dist/src/popup.html"
   },
   "background": {
-    "service_worker": "src/background.js"
+    "service_worker": "dist/extension/background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
@@ -17,7 +18,7 @@
         "https://anitabi.cn/map*"
       ],
       "js": [
-        "src/content.js"
+        "dist/extension/content.js"
       ],
       "run_at": "document_idle"
     }
@@ -26,8 +27,9 @@
     {
       "resources": [
         "dist/index.html",
+        "dist/src/popup.html",
         "dist/assets/*",
-        "dist/src/exporter-core.js"
+        "dist/extension/*"
       ],
       "matches": [
         "https://www.anitabi.cn/*",

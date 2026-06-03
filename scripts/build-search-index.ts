@@ -1,33 +1,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
+import { asText, chooseCover } from "../src/core/index.ts";
 
 const inputPath = process.argv[2] || "tmp/g.json";
 const outputPath = process.argv[3] || "public/data/search-index.json";
-
-function asText(value) {
-  if (value === null || value === undefined) return "";
-  return String(value);
-}
-
-function toAbsoluteAnitabiUrl(url) {
-  const text = asText(url).trim();
-  if (!text) return "";
-  if (/^https?:\/\//i.test(text)) return text;
-  if (text.startsWith("/")) return "https://www.anitabi.cn" + text;
-  return text;
-}
-
-function isCoverCandidate(value) {
-  const text = asText(value).trim();
-  return /^https?:\/\//i.test(text) || text.startsWith("/");
-}
-
-function chooseCover() {
-  for (const value of arguments) {
-    if (isCoverCandidate(value)) return toAbsoluteAnitabiUrl(value);
-  }
-  return "";
-}
 
 function toSearchItem(item) {
   if (!Array.isArray(item)) return null;

@@ -1,3 +1,5 @@
+import { baseHeaders, jsonError } from "../_shared/http";
+
 export async function onRequestGet(context) {
   if (!context.env || !context.env.ASSETS) {
     return jsonError("local_search_index_unavailable", new Error("Pages ASSETS binding is unavailable"));
@@ -24,27 +26,5 @@ export async function onRequestOptions() {
   return new Response(null, {
     status: 204,
     headers: baseHeaders()
-  });
-}
-
-function jsonError(code, error, status) {
-  return new Response(
-    JSON.stringify({
-      error: code,
-      message: error instanceof Error ? error.message : "Unknown proxy error"
-    }),
-    {
-      status: status || 502,
-      headers: baseHeaders()
-    }
-  );
-}
-
-function baseHeaders() {
-  return new Headers({
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET, OPTIONS",
-    "cache-control": "no-store",
-    "content-type": "application/json; charset=utf-8"
   });
 }

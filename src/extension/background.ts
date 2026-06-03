@@ -4,7 +4,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const reply = (payload) => {
     try {
       sendResponse(payload);
-    } catch (error) {
+    } catch (_error) {
       // The sender may have closed the popup before the async response returns.
     }
   };

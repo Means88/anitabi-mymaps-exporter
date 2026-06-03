@@ -4,7 +4,7 @@ function parseBangumiId(url) {
   try {
     const parsed = new URL(url);
     return parsed.searchParams.get("bangumiId") || "";
-  } catch (error) {
+  } catch (_error) {
     return "";
   }
 }

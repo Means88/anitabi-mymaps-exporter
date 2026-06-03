@@ -44,7 +44,7 @@
   ].join("\n");
 
   function frameWindow() {
-    const frame = document.getElementById("anitabi-mymaps-frame");
+    const frame = document.getElementById("anitabi-mymaps-frame") as HTMLIFrameElement | null;
     return frame && frame.contentWindow;
   }
 
@@ -81,7 +81,7 @@
       const parsed = new URL(url, location.href);
       const value = parsed.searchParams.get("pointId") || parsed.searchParams.get("point_id") || parsed.searchParams.get("point") || parsed.searchParams.get("id");
       return isPointId(value) ? String(value) : "";
-    } catch (error) {
+    } catch (_error) {
       return "";
     }
   }

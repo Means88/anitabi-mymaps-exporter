@@ -4,12 +4,13 @@ import * as Popover from "@radix-ui/react-popover";
 import * as ScrollArea from "@radix-ui/react-scroll-area";
 import * as Toast from "@radix-ui/react-toast";
 import * as ToggleGroup from "@radix-ui/react-toggle-group";
+import * as core from "./core";
 import "./app.css";
 
-const core = window.AnitabiExporterCore;
 const THEME_STORAGE_KEY = "anitabi-exporter-theme";
 const LANGUAGE_STORAGE_KEY = "anitabi-exporter-language";
 const APP_PARAMS = new URLSearchParams(window.location.search);
+const INITIAL_BANGUMI_ID = APP_PARAMS.get("bangumiId") || "";
 const IS_EMBEDDED = APP_PARAMS.get("embedded") === "1";
 const IS_EXTENSION = location.protocol === "chrome-extension:";
 const USE_PROXY = !IS_EXTENSION && location.protocol !== "file:";
@@ -279,7 +280,7 @@ function App() {
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [loadingCount, setLoadingCount] = useState(0);
-  const [bangumiInput, setBangumiInput] = useState("");
+  const [bangumiInput, setBangumiInput] = useState(INITIAL_BANGUMI_ID);
   const [currentWork, setCurrentWork] = useState(null);
   const [currentPoints, setCurrentPoints] = useState([]);
   const [selectedPointIds, setSelectedPointIds] = useState(new Set());
@@ -386,7 +387,7 @@ function App() {
       }
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [announce, ensureSearchIndex, searchQuery]);
+  }, [announce, ensureSearchIndex, searchQuery, t]);
 
   const addRowsToCart = useCallback((work, points, ids) => {
     let added = 0;
@@ -431,10 +432,8 @@ function App() {
   }, [addRowsToCart, announce, bangumiInput, currentPoints, currentWork, loadWorkById, t]);
 
   useEffect(() => {
-    const initialBangumiId = APP_PARAMS.get("bangumiId");
-    if (initialBangumiId) {
-      setBangumiInput(initialBangumiId);
-      loadWorkById(initialBangumiId);
+    if (INITIAL_BANGUMI_ID) {
+      loadWorkById(INITIAL_BANGUMI_ID);
     }
   }, [loadWorkById]);
 
