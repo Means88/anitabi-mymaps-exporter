@@ -6,6 +6,8 @@
   if (!bangumiId || document.getElementById(ROOT_ID)) return;
 
   const appUrl = chrome.runtime.getURL("dist/index.html?embedded=1&bangumiId=" + encodeURIComponent(bangumiId));
+  const fontBaseUrl = chrome.runtime.getURL("dist/fonts/gensen-rounded/");
+  const FONT_STACK = "\"GenSen Rounded\", \"Hiragino Maru Gothic ProN\", \"Yu Gothic UI\", \"Meiryo\", \"Microsoft YaHei UI\", system-ui, sans-serif";
   let panelOpen = false;
   let frameLoaded = false;
   const pendingMessages = [];
@@ -28,8 +30,11 @@
 
   const style = document.createElement("style");
   style.textContent = [
-    "#" + ROOT_ID + " { all: initial; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }",
+    "@font-face { font-family: 'GenSen Rounded'; src: url('" + fontBaseUrl + "GenSenRounded2TW-R.woff2') format('woff2'); font-display: swap; font-style: normal; font-weight: 400; }",
+    "@font-face { font-family: 'GenSen Rounded'; src: url('" + fontBaseUrl + "GenSenRounded2TW-B.woff2') format('woff2'); font-display: swap; font-style: normal; font-weight: 700; }",
+    "#" + ROOT_ID + " { all: initial; font-family: " + FONT_STACK + "; }",
     "#" + ROOT_ID + " * { box-sizing: border-box; }",
+    "#" + ROOT_ID + " button { font-family: inherit; }",
     "#anitabi-mymaps-fab { position: fixed; z-index: 2147483647; top: 82px; right: 18px; display: inline-flex; align-items: center; gap: 7px; height: 40px; border: 0; border-radius: 999px; padding: 0 14px; background: #ff6fae; color: #fff; font-size: 14px; font-weight: 800; box-shadow: 0 10px 24px rgba(255,111,174,.32); cursor: pointer; }",
     "#anitabi-mymaps-fab:hover { background: #ff4f9d; }",
     "#anitabi-mymaps-panel { position: fixed; z-index: 2147483646; top: 0; right: 0; width: min(500px, 100vw); height: 100vh; display: grid; grid-template-rows: 48px 1fr; background: #fff7ec; border-left: 1px solid rgba(77,183,255,.32); box-shadow: -18px 0 40px rgba(16,26,52,.22); transform: translateX(104%); transition: transform 180ms ease-out; }",
@@ -39,7 +44,7 @@
     "#anitabi-mymaps-panel-bar button { border: 0; border-radius: 999px; min-height: 30px; padding: 0 10px; background: #fff; color: #253044; font-size: 12px; font-weight: 800; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(77,183,255,.32); }",
     "#anitabi-mymaps-close { width: 30px; padding: 0 !important; font-size: 18px !important; }",
     "#anitabi-mymaps-frame { width: 100%; height: 100%; border: 0; background: #fff7ec; }",
-    "." + POINT_BUTTON_CLASS + " { display: inline-grid !important; place-items: center !important; width: 28px !important; height: 28px !important; margin-left: 6px !important; border: 0 !important; border-radius: 999px !important; padding: 0 !important; background: #ff6fae !important; color: #fff !important; font-size: 15px !important; font-weight: 800 !important; line-height: 1 !important; box-shadow: 0 4px 12px rgba(255,111,174,.24) !important; cursor: pointer !important; vertical-align: middle !important; }",
+    "." + POINT_BUTTON_CLASS + " { display: inline-grid !important; place-items: center !important; width: 28px !important; height: 28px !important; margin-left: 6px !important; border: 0 !important; border-radius: 999px !important; padding: 0 !important; background: #ff6fae !important; color: #fff !important; font-family: " + FONT_STACK + " !important; font-size: 15px !important; font-weight: 800 !important; line-height: 1 !important; box-shadow: 0 4px 12px rgba(255,111,174,.24) !important; cursor: pointer !important; vertical-align: middle !important; }",
     "." + POINT_BUTTON_CLASS + " svg { width: 13px !important; height: 13px !important; display: block !important; }"
   ].join("\n");
 

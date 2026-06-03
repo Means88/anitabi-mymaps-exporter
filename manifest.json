@@ -29,6 +29,7 @@
         "dist/index.html",
         "dist/src/popup.html",
         "dist/assets/*",
+        "dist/fonts/*",
         "dist/extension/*"
       ],
       "matches": [
