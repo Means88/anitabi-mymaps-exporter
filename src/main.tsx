@@ -607,7 +607,7 @@ function App() {
             return next;
           })}
           exportCsv={() => downloadText(core.generateCsv(rows), "text/csv;charset=utf-8", core.makeFileName(rows, "csv"))}
-          exportKml={() => downloadText(core.generateKml(rows), "application/vnd.google-earth.kml+xml;charset=utf-8", core.makeFileName(rows, "kml"))}
+          exportKml={() => downloadText(core.generateKml(rows, { language }), "application/vnd.google-earth.kml+xml;charset=utf-8", core.makeFileName(rows, "kml"))}
           t={t}
         />
       </main>

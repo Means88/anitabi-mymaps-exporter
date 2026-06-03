@@ -56,6 +56,20 @@ describe("core export helpers", () => {
     expect(kml).toContain("CC BY-NC-SA 4.0");
   });
 
+  it("localizes KML work and point names from the UI language", () => {
+    const rows = core.buildRows({ ...lite, cn: "中文作品", title: "Original Work" }, points);
+
+    const zhKml = core.generateKml(rows, { language: "zh" });
+    expect(zhKml).toContain("<name>中文作品</name>");
+    expect(zhKml).toContain("<name>砂川服务区（上行）</name>");
+    expect(zhKml).toContain("<strong>Work:</strong> 中文作品");
+
+    const enKml = core.generateKml(rows, { language: "en" });
+    expect(enKml).toContain("<name>Original Work</name>");
+    expect(enKml).toContain("<name>砂川サービスエリア (上り)</name>");
+    expect(enKml).toContain("<strong>Work:</strong> Original Work");
+  });
+
   it("builds dated export file names", () => {
     const rows = core.buildRows(lite, points);
 

@@ -3,6 +3,10 @@ import { normalizeBangumiLite, normalizeDetailPoints, pointDisplayName } from ".
 import { asText, firstText } from "./text.ts";
 import { subjectMapUrl } from "./urls.ts";
 
+export interface GenerateKmlOptions {
+  language?: string;
+}
+
 export function buildRows(work: Record<string, unknown> | undefined, points: unknown): ExportRow[] {
   const normalizedWork = normalizeBangumiLite(work || {});
   return normalizeDetailPoints(points).map((point) => {
@@ -84,12 +88,26 @@ function escapeCdata(value: unknown): string {
   return asText(value).replace(/\]\]>/g, "]]]]><![CDATA[>");
 }
 
-function kmlDescription(row: ExportRow): string {
+function usesChineseNames(language: string | undefined): boolean {
+  return asText(language).toLowerCase().startsWith("zh");
+}
+
+function localizedWorkName(row: ExportRow, language: string | undefined): string {
+  if (usesChineseNames(language)) return firstText(row.work_cn, row.work_title, row.work_id, "Anitabi");
+  return firstText(row.work_title, row.work_cn, row.work_id, "Anitabi");
+}
+
+function localizedPointName(row: ExportRow, language: string | undefined): string {
+  if (usesChineseNames(language)) return firstText(row.point_cn, row.point_name, row.point_id);
+  return firstText(row.point_name, row.point_cn, row.point_id);
+}
+
+function kmlDescription(row: ExportRow, options: GenerateKmlOptions): string {
   const lines: string[] = [];
   if (row.image_url) {
     lines.push('<p><img src="' + escapeXml(row.image_url) + '" style="max-width:320px"></p>');
   }
-  lines.push("<p><strong>Work:</strong> " + escapeXml(firstText(row.work_cn, row.work_title, row.work_id)) + "</p>");
+  lines.push("<p><strong>Work:</strong> " + escapeXml(localizedWorkName(row, options.language)) + "</p>");
   if (row.ep) lines.push("<p><strong>Episode:</strong> " + escapeXml(row.ep) + "</p>");
   if (row.time_seconds) lines.push("<p><strong>Time:</strong> " + escapeXml(row.time_seconds) + " seconds</p>");
   if (row.origin_url) {
@@ -112,18 +130,18 @@ export function groupRowsByWork(rows: ExportRow[]): Map<string, ExportRow[]> {
   return groups;
 }
 
-export function generateKml(rows: ExportRow[]): string {
+export function generateKml(rows: ExportRow[], options: GenerateKmlOptions = {}): string {
   const folders: string[] = [];
   groupRowsByWork(rows).forEach((groupRows) => {
     const first = groupRows[0];
-    const folderName = firstText(first.work_cn, first.work_title, first.work_id, "Anitabi");
+    const folderName = localizedWorkName(first, options.language);
     const placemarks = groupRows
       .map((row) => {
-        const name = firstText(row.point_cn, row.point_name, row.point_id);
+        const name = localizedPointName(row, options.language);
         return [
           "    <Placemark>",
           "      <name>" + escapeXml(name) + "</name>",
-          "      <description><![CDATA[" + escapeCdata(kmlDescription(row)) + "]]></description>",
+          "      <description><![CDATA[" + escapeCdata(kmlDescription(row, options)) + "]]></description>",
           "      <Point><coordinates>" + escapeXml(row.longitude) + "," + escapeXml(row.latitude) + ",0</coordinates></Point>",
           "    </Placemark>"
         ].join("\n");
