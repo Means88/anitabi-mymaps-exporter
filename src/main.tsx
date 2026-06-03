@@ -346,6 +346,13 @@ function App() {
     };
   }, [fetchJson]);
 
+  const fetchSingleHostPoint = useCallback(async (id, pointId) => {
+    const bangumiId = extractBangumiId(id);
+    const raw = await fetchJson(API_BASE + "/bangumi/" + encodeURIComponent(bangumiId) + "/points");
+    const source = Array.isArray(raw) ? raw : raw && Array.isArray(raw.points) ? raw.points : [];
+    return core.normalizeDetailPoints(source).find((point) => point.id === core.asText(pointId)) || null;
+  }, [fetchJson]);
+
   const loadWorkById = useCallback(async (id) => {
     const bangumiId = extractBangumiId(id);
     if (!bangumiId) {
@@ -397,18 +404,15 @@ function App() {
   }, [announce, ensureSearchIndex, searchQuery, t]);
 
   const addRowsToCart = useCallback((work, points, ids) => {
-    let added = 0;
+    const rowsToAdd = core.buildRows(work, points).filter((row) => ids.has(row.point_id));
+    const added = rowsToAdd.filter((row) => !cart.has(row.key)).length;
     setCart((previous) => {
       const next = new Map(previous);
-      core.buildRows(work, points).forEach((row) => {
-        if (!ids.has(row.point_id)) return;
-        if (!next.has(row.key)) added += 1;
-        next.set(row.key, row);
-      });
+      rowsToAdd.forEach((row) => next.set(row.key, row));
       return next;
     });
     announce(t("addedPoints", { count: added }));
-  }, [announce, t]);
+  }, [announce, cart, t]);
 
   const addSelectedPoints = useCallback(() => {
     if (!currentWork) return;
@@ -431,12 +435,17 @@ function App() {
     }
     const ids = pointId ? new Set([core.asText(pointId)]) : new Set(points.map((point) => point.id));
     if (pointId && !points.some((point) => point.id === core.asText(pointId))) {
-      announce(t("pointNotFound", { id: pointId }));
-      return;
+      const fallbackPoint = await fetchSingleHostPoint(bangumiId, pointId);
+      if (!fallbackPoint) {
+        announce(t("pointNotFound", { id: pointId }));
+        return;
+      }
+      points = [fallbackPoint];
+      setCurrentPoints((previous) => previous.some((point) => point.id === fallbackPoint.id) ? previous : [...previous, fallbackPoint]);
     }
     setSelectedPointIds(ids);
     addRowsToCart(work, points, ids);
-  }, [addRowsToCart, announce, bangumiInput, currentPoints, currentWork, loadWorkById, t]);
+  }, [addRowsToCart, announce, bangumiInput, currentPoints, currentWork, fetchSingleHostPoint, loadWorkById, t]);
 
   useEffect(() => {
     if (INITIAL_BANGUMI_ID) {

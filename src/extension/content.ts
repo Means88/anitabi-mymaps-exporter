@@ -1,16 +1,26 @@
 (function injectAnitabiExporterPanel() {
   const ROOT_ID = "anitabi-mymaps-export-root";
   const POINT_BUTTON_CLASS = "anitabi-mymaps-point-add";
-  const params = new URLSearchParams(window.location.search);
-  const bangumiId = params.get("bangumiId");
-  if (!bangumiId || document.getElementById(ROOT_ID)) return;
+  const API_BASE = "https://api.anitabi.cn";
+  if (document.getElementById(ROOT_ID)) return;
 
-  const appUrl = chrome.runtime.getURL("dist/index.html?embedded=1&bangumiId=" + encodeURIComponent(bangumiId));
+  const appUrl = chrome.runtime.getURL("dist/index.html?embedded=1&bangumiId=" + encodeURIComponent(currentBangumiId()));
   const fontBaseUrl = chrome.runtime.getURL("dist/fonts/gensen-rounded/");
   const FONT_STACK = "\"GenSen Rounded\", \"Hiragino Maru Gothic ProN\", \"Yu Gothic UI\", \"Meiryo\", \"Microsoft YaHei UI\", system-ui, sans-serif";
   let panelOpen = false;
   let frameLoaded = false;
-  const pendingMessages = [];
+  let decorateTimer = 0;
+  const pendingMessages: Record<string, unknown>[] = [];
+  const pointCache = new Map<string, Promise<HostPoint[]>>();
+
+  interface HostPoint {
+    id: string;
+    cn: string;
+    name: string;
+    image: string;
+    mark: string;
+    geo: unknown;
+  }
 
   const root = document.createElement("div");
   root.id = ROOT_ID;
@@ -44,9 +54,29 @@
     "#anitabi-mymaps-panel-bar button { border: 0; border-radius: 999px; min-height: 30px; padding: 0 10px; background: #fff; color: #253044; font-size: 12px; font-weight: 800; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(77,183,255,.32); }",
     "#anitabi-mymaps-close { width: 30px; padding: 0 !important; font-size: 18px !important; }",
     "#anitabi-mymaps-frame { width: 100%; height: 100%; border: 0; background: #fff7ec; }",
-    "." + POINT_BUTTON_CLASS + " { display: inline-grid !important; place-items: center !important; width: 28px !important; height: 28px !important; margin-left: 6px !important; border: 0 !important; border-radius: 999px !important; padding: 0 !important; background: #ff6fae !important; color: #fff !important; font-family: " + FONT_STACK + " !important; font-size: 15px !important; font-weight: 800 !important; line-height: 1 !important; box-shadow: 0 4px 12px rgba(255,111,174,.24) !important; cursor: pointer !important; vertical-align: middle !important; }",
-    "." + POINT_BUTTON_CLASS + " svg { width: 13px !important; height: 13px !important; display: block !important; }"
+    "." + POINT_BUTTON_CLASS + " { display: inline-grid !important; place-items: center !important; width: 28px !important; height: 28px !important; margin-left: 6px !important; border: 0 !important; border-radius: 999px !important; padding: 0 !important; background: #ff6fae !important; color: #fff !important; font-family: " + FONT_STACK + " !important; font-size: 12px !important; font-weight: 800 !important; line-height: 1 !important; box-shadow: 0 4px 12px rgba(255,111,174,.24) !important; cursor: pointer !important; vertical-align: middle !important; pointer-events: auto !important; }",
+    "." + POINT_BUTTON_CLASS + ":hover { background: #ff4f9d !important; }",
+    "." + POINT_BUTTON_CLASS + ".is-added { background: #35d6a4 !important; }",
+    "." + POINT_BUTTON_CLASS + " svg { width: 12px !important; height: 12px !important; display: block !important; flex: 0 0 auto !important; }",
+    ".feature-item .anicodex-anchor, .point-item-no-image .anicodex-anchor { position: absolute !important; top: 8px !important; right: 8px !important; z-index: 3 !important; margin-left: 0 !important; }",
+    ".feature-item.point-item h4 { padding-right: 36px !important; }",
+    ".feature-item.point-item-no-image h4 { padding-right: 36px !important; }",
+    ".point-popup-inset-box .anicodex-anchor { width: 26px !important; height: 26px !important; }",
+    ".point-popup-inset-box .info-foot { align-items: center !important; gap: 6px !important; }"
   ].join("\n");
+
+  function asText(value: unknown) {
+    return value == null ? "" : String(value);
+  }
+
+  function currentBangumiId() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("bangumiId") || "";
+    } catch (_error) {
+      return "";
+    }
+  }
 
   function frameWindow() {
     const frame = document.getElementById("anitabi-mymaps-frame") as HTMLIFrameElement | null;
@@ -60,7 +90,7 @@
       pendingMessages.push(message);
       return;
     }
-    target.postMessage(Object.assign({ bangumiId }, message), "*");
+    target.postMessage(Object.assign({ bangumiId: currentBangumiId() }, message), "*");
   }
 
   function flushMessages() {
@@ -74,7 +104,7 @@
     panelOpen = nextOpen;
     root.classList.toggle("is-open", panelOpen);
     document.getElementById("anitabi-mymaps-fab").setAttribute("aria-expanded", panelOpen ? "true" : "false");
-    if (panelOpen && frameLoaded) postToApp({ type: "anitabi-exporter-load-work" });
+    if (panelOpen && frameLoaded && currentBangumiId()) postToApp({ type: "anitabi-exporter-load-work" });
   }
 
   function isPointId(value) {
@@ -84,7 +114,7 @@
   function readPointIdFromUrl(url) {
     try {
       const parsed = new URL(url, location.href);
-      const value = parsed.searchParams.get("pointId") || parsed.searchParams.get("point_id") || parsed.searchParams.get("point") || parsed.searchParams.get("id");
+      const value = parsed.searchParams.get("pid") || parsed.searchParams.get("pointId") || parsed.searchParams.get("point_id") || parsed.searchParams.get("point") || parsed.searchParams.get("id");
       return isPointId(value) ? String(value) : "";
     } catch (_error) {
       return "";
@@ -93,6 +123,95 @@
 
   function currentUrlPointId() {
     return readPointIdFromUrl(location.href);
+  }
+
+  function normalizeMatchText(value) {
+    return asText(value).replace(/\u200b/g, "").replace(/\s+/g, "").trim().toLowerCase();
+  }
+
+  function normalizeHostPoint(raw: Record<string, unknown>): HostPoint | null {
+    if (!raw || !isPointId(raw.id)) return null;
+    return {
+      id: asText(raw.id),
+      cn: asText(raw.cn),
+      name: asText(raw.name),
+      image: asText(raw.image),
+      mark: asText(raw.mark),
+      geo: raw.geo
+    };
+  }
+
+  function loadHostPoints(workId) {
+    if (!workId) return Promise.resolve([]);
+    if (!pointCache.has(workId)) {
+      const url = API_BASE + "/bangumi/" + encodeURIComponent(workId) + "/points";
+      pointCache.set(workId, fetch(url, { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : [])
+        .then((raw) => {
+          const source = Array.isArray(raw) ? raw : Array.isArray(raw && raw.points) ? raw.points : [];
+          return source.map(normalizeHostPoint).filter(Boolean) as HostPoint[];
+        })
+        .catch(() => []));
+    }
+    return pointCache.get(workId);
+  }
+
+  function readPointIdFromImageUrl(url, points: HostPoint[] = []) {
+    const text = asText(url);
+    if (!text) return "";
+    let filename;
+    try {
+      filename = new URL(text, location.href).pathname.split("/").pop() || "";
+    } catch (_error) {
+      filename = text.split(/[/?#]/).filter(Boolean).pop() || "";
+    }
+    const directMatch = filename.match(/^([a-z0-9]{2,80})(?:[-_.]|$)/i);
+    const candidate = directMatch && directMatch[1];
+    if (candidate && (!points.length || points.some((point) => point.id === candidate))) return candidate;
+    const matchingPoint = points.find((point) => point.image && text.includes(point.id));
+    return matchingPoint ? matchingPoint.id : "";
+  }
+
+  function readPointIdFromImages(container, points: HostPoint[] = []) {
+    const images = Array.from(container.querySelectorAll("img")) as HTMLImageElement[];
+    for (const image of images) {
+      const value = readPointIdFromImageUrl(image.currentSrc || image.src, points);
+      if (value) return value;
+    }
+    return "";
+  }
+
+  function pointNameCandidates(point: HostPoint) {
+    return [point.cn, point.name].map(normalizeMatchText).filter(Boolean);
+  }
+
+  function geoMatches(text, geo) {
+    if (!Array.isArray(geo) || geo.length < 2) return false;
+    const numbers = asText(text).match(/-?\d+(?:\.\d+)?/g);
+    if (!numbers || numbers.length < 2) return false;
+    return Math.abs(Number(numbers[0]) - Number(geo[0])) < 0.00001 && Math.abs(Number(numbers[1]) - Number(geo[1])) < 0.00001;
+  }
+
+  function findPointInCacheForItem(container, points: HostPoint[], usedIds: Set<string> = new Set()) {
+    const imageId = readPointIdFromImages(container, points);
+    if (imageId) return imageId;
+
+    const activeId = container.getAttribute("data-active") === "true" ? currentUrlPointId() : "";
+    if (activeId && points.some((point) => point.id === activeId)) return activeId;
+
+    const title = normalizeMatchText(container.querySelector("h4")?.textContent || container.textContent || "");
+    const mark = normalizeMatchText(container.querySelector(".mark-text")?.textContent || "");
+    const geoText = container.querySelector(".gps")?.textContent || "";
+    const matches = points.filter((point) => {
+      const names = pointNameCandidates(point);
+      if (!names.includes(title)) return false;
+      if (geoText && geoMatches(geoText, point.geo)) return true;
+      if (mark && normalizeMatchText(point.mark) === mark) return true;
+      return true;
+    });
+    if (matches.length === 1) return matches[0].id;
+    const unusedMatch = matches.find((point) => !usedIds.has(point.id));
+    return unusedMatch ? unusedMatch.id : "";
   }
 
   function findPointId(element) {
@@ -109,6 +228,8 @@
       const value = readPointIdFromUrl(link.href);
       if (value) return value;
     }
+    const imageValue = readPointIdFromImages(element);
+    if (imageValue) return imageValue;
     return "";
   }
 
@@ -116,45 +237,93 @@
     const button = document.createElement("button");
     button.type = "button";
     button.className = POINT_BUTTON_CLASS;
+    button.classList.add("anicodex-anchor");
     button.title = "加入导出清单";
     button.setAttribute("aria-label", "加入导出清单");
+    button.dataset.pointId = pointId;
     button.innerHTML = '<svg aria-hidden="true" focusable="false" viewBox="0 0 512 512"><path fill="currentColor" d="M256 48C141.1 48 48 141.1 48 256s93.1 208 208 208 208-93.1 208-208S370.9 48 256 48zm96 232h-72v72c0 13.3-10.7 24-24 24s-24-10.7-24-24v-72h-72c-13.3 0-24-10.7-24-24s10.7-24 24-24h72v-72c0-13.3 10.7-24 24-24s24 10.7 24 24v72h72c13.3 0 24 10.7 24 24s-10.7 24-24 24z"></path></svg>';
     button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
       setOpen(true);
       postToApp({ type: "anitabi-exporter-add-point", pointId });
+      button.classList.add("is-added");
+      window.setTimeout(() => {
+        button.classList.remove("is-added");
+      }, 1200);
     });
     return button;
   }
 
   function decorateContainer(container, pointId) {
-    if (!container || container.querySelector("." + POINT_BUTTON_CLASS)) return;
+    if (!container) return;
     if (!isPointId(pointId)) return;
+    const existing = container.querySelector("." + POINT_BUTTON_CLASS) as HTMLButtonElement | null;
+    if (existing) {
+      if (existing.dataset.pointId === pointId) return;
+      existing.remove();
+    }
     container.appendChild(createPointButton(pointId));
   }
 
-  function decoratePointNodes() {
-    const candidates = document.querySelectorAll([
+  async function decorateAnitabiMapItems() {
+    const workId = currentBangumiId();
+    if (!workId) return;
+    const items = Array.from(document.querySelectorAll(".side-bangumi-box .feature-item.point-item, .side-bangumi-box .feature-item.point-item-no-image")) as HTMLElement[];
+    if (!items.length) return;
+    const points = await loadHostPoints(workId);
+    const usedIds = new Set<string>();
+    items.forEach((item) => {
+      const pointId = findPointId(item) || findPointInCacheForItem(item, points, usedIds);
+      if (pointId) usedIds.add(pointId);
+      decorateContainer(item, pointId);
+    });
+  }
+
+  async function decorateAnitabiPopups() {
+    const workId = currentBangumiId();
+    const points = workId ? await loadHostPoints(workId) : [];
+    const popupRoots = Array.from(document.querySelectorAll([
+      ".mapbox-point-popup-box[data-type='popup']",
+      ".leaflet-popup .map-popup-box",
+      ".maplibregl-popup .map-popup-box"
+    ].join(","))) as HTMLElement[];
+    popupRoots.forEach((popupRoot) => {
+      const container = popupRoot.querySelector(".point-popup-inset-box .info-foot")
+        || popupRoot.querySelector(".point-popup-inset-box .info-box")
+        || popupRoot;
+      const pointId = currentUrlPointId() || findPointId(popupRoot) || findPointInCacheForItem(popupRoot, points);
+      decorateContainer(container, pointId);
+    });
+  }
+
+  async function decorateGenericPointNodes() {
+    const candidates = Array.from(document.querySelectorAll([
       "[data-point-id]",
       "[data-pointid]",
       "[data-poi-id]",
       "[data-id]",
+      "[data-pid]",
       "a[href*='pointId=']",
       "a[href*='point_id=']",
-      "a[href*='point=']"
-    ].join(","));
+      "a[href*='point=']",
+      "a[href*='pid=']"
+    ].join(","))) as HTMLElement[];
     candidates.forEach((candidate) => {
       const container = candidate.closest("li, article, section, div") || candidate;
       const pointId = findPointId(candidate);
       decorateContainer(container, pointId);
     });
-    const urlPointId = currentUrlPointId();
-    if (urlPointId) {
-      document.querySelectorAll(".leaflet-popup, .maplibregl-popup, [role='dialog']").forEach((container) => {
-        decorateContainer(container, urlPointId);
-      });
-    }
+  }
+
+  function decoratePointNodes() {
+    if (decorateTimer) return;
+    decorateTimer = window.setTimeout(() => {
+      decorateTimer = 0;
+      decorateGenericPointNodes();
+      decorateAnitabiMapItems();
+      decorateAnitabiPopups();
+    }, 80);
   }
 
   document.body.appendChild(style);
@@ -169,7 +338,7 @@
   document.getElementById("anitabi-mymaps-frame").addEventListener("load", () => {
     frameLoaded = true;
     flushMessages();
-    if (panelOpen) postToApp({ type: "anitabi-exporter-load-work" });
+    if (panelOpen && currentBangumiId()) postToApp({ type: "anitabi-exporter-load-work" });
   });
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -185,4 +354,5 @@
   window.addEventListener("popstate", decoratePointNodes);
   window.addEventListener("hashchange", decoratePointNodes);
   document.addEventListener("click", () => window.setTimeout(decoratePointNodes, 120), true);
+  window.setInterval(decoratePointNodes, 1000);
 })();
