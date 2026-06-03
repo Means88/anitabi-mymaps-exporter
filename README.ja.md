@@ -40,3 +40,7 @@ Anitabi My Maps Exporter は、Anitabi の聖地巡礼スポットを Google My 
 ## 出典表記
 
 出力データには、利用可能な場合 Anitabi の origin と origin URL を保持します。Anitabi および元の投稿者が示す出典表記と CC BY-NC-SA 4.0 の条件に従ってください。
+
+## ライセンス
+
+このプロジェクトは [MIT License](LICENSE) の下で公開されています。

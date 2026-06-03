@@ -40,3 +40,7 @@ Anitabi My Maps Exporter 可以把 Anitabi 巡礼地点导出为 Google My Maps 
 ## 来源署名
 
 导出的数据会尽量保留 Anitabi 的 origin 和 origin URL 字段。请遵守 Anitabi 及原贡献者关于来源署名和 CC BY-NC-SA 4.0 的要求。
+
+## 许可证
+
+本项目使用 [MIT License](LICENSE)。

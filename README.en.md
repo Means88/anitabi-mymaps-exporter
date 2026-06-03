@@ -40,3 +40,7 @@ You can use the deployed web page directly. Enter a Bangumi ID or Anitabi map UR
 ## Source Attribution
 
 Exported data keeps Anitabi origin and origin URL fields where available. Please follow the source attribution and CC BY-NC-SA 4.0 guidance from Anitabi and the underlying contributors.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
