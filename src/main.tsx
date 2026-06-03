@@ -223,6 +223,12 @@ const MESSAGES = {
 type Language = keyof typeof MESSAGES;
 type MessageKey = keyof typeof MESSAGES.zh;
 
+const HTML_LANG_BY_LANGUAGE: Record<Language, string> = {
+  zh: "zh-CN",
+  en: "en",
+  ja: "ja"
+};
+
 function normalizeLanguage(value: string | null | undefined): Language {
   const text = core.asText(value).toLowerCase();
   if (text.startsWith("ja")) return "ja";
@@ -303,6 +309,7 @@ function App() {
 
   useEffect(() => {
     storeLanguage(language);
+    document.documentElement.lang = HTML_LANG_BY_LANGUAGE[language];
   }, [language]);
 
   useEffect(() => {
