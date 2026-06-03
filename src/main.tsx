@@ -558,27 +558,29 @@ function App() {
           >
             <label>
               <span>{t("searchWork")}</span>
-              <input
-                type="search"
-                value={searchQuery}
-                onFocus={() => setSearchOpen(true)}
-                onChange={(event) => {
-                  setSearchQuery(event.target.value);
-                  setSearchOpen(true);
-                }}
-                placeholder={t("searchPlaceholder")}
-              />
+              <div className="search-field">
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onFocus={() => setSearchOpen(true)}
+                  onChange={(event) => {
+                    setSearchQuery(event.target.value);
+                    setSearchOpen(true);
+                  }}
+                  placeholder={t("searchPlaceholder")}
+                />
+                <SearchResults
+                  open={searchOpen}
+                  results={searchResults}
+                  query={searchQuery}
+                  onLoad={(id) => {
+                    setSearchOpen(false);
+                    loadWorkById(id);
+                  }}
+                  t={t}
+                />
+              </div>
             </label>
-            <SearchResults
-              open={searchOpen}
-              results={searchResults}
-              query={searchQuery}
-              onLoad={(id) => {
-                setSearchOpen(false);
-                loadWorkById(id);
-              }}
-              t={t}
-            />
           </div>
 
           <CurrentWork
@@ -625,23 +627,25 @@ function SearchResults({ open, results, query, onLoad, t }) {
     return <div className="search-results-popover search-results-empty">{t("noSearchMatch")}</div>;
   }
   return (
-    <ScrollArea.Root className="search-results-popover search-results-scroll">
-      <ScrollArea.Viewport>
-        <div className="search-results">
-          {results.map((result) => (
-            <button key={result.id} type="button" className="search-result" onClick={() => onLoad(result.id)}>
-              {result.cover ? <img src={result.cover} alt="" /> : <span className="cover-placeholder"><Icon name="map" /></span>}
-              <div>
-                <div className="result-title">{core.firstText(result.cn, result.title, result.id)}</div>
-                <div className="result-meta">{result.title} · {t("workId", { id: result.id })} · {result.city || t("unknownArea")}</div>
-              </div>
-              <div className="result-meta result-points"><Icon name="locationDot" /><span>{result.pointsLength} {t("pointsShort")}</span></div>
-            </button>
-          ))}
-        </div>
-      </ScrollArea.Viewport>
-      <ScrollArea.Scrollbar orientation="vertical" />
-    </ScrollArea.Root>
+    <div className="search-results-popover">
+      <ScrollArea.Root className="search-results-scroll">
+        <ScrollArea.Viewport>
+          <div className="search-results">
+            {results.map((result) => (
+              <button key={result.id} type="button" className="search-result" onClick={() => onLoad(result.id)}>
+                {result.cover ? <img src={result.cover} alt="" /> : <span className="cover-placeholder"><Icon name="map" /></span>}
+                <div>
+                  <div className="result-title">{core.firstText(result.cn, result.title, result.id)}</div>
+                  <div className="result-meta">{result.title} · {t("workId", { id: result.id })} · {result.city || t("unknownArea")}</div>
+                </div>
+                <div className="result-meta result-points"><Icon name="locationDot" /><span>{result.pointsLength} {t("pointsShort")}</span></div>
+              </button>
+            ))}
+          </div>
+        </ScrollArea.Viewport>
+        <ScrollArea.Scrollbar orientation="vertical" />
+      </ScrollArea.Root>
+    </div>
   );
 }
 
