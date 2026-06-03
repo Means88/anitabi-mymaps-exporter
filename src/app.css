@@ -8,6 +8,7 @@
   --panel: rgba(255, 255, 255, 0.86);
   --panel-strong: rgba(255, 255, 255, 0.96);
   --surface: rgba(255, 255, 255, 0.9);
+  --search-popover-bg: #ffffff;
   --point-surface: #fffdf9;
   --point-selected: #fffdf9;
   --text: #253044;
@@ -33,6 +34,7 @@
   --panel: rgba(34, 50, 74, 0.84);
   --panel-strong: rgba(40, 58, 86, 0.96);
   --surface: rgba(44, 64, 96, 0.9);
+  --search-popover-bg: #283a56;
   --point-surface: rgba(38, 53, 74, 0.96);
   --point-selected: rgba(38, 53, 74, 0.96);
   --text: #f8fbff;
@@ -323,7 +325,7 @@ button.text-button:hover:not(:disabled) {
 .panel {
   min-height: calc(100vh - 104px);
   border: 1px solid var(--line);
-  border-radius: 24px;
+  border-radius: 12px;
   background: var(--panel);
   box-shadow: var(--shadow);
   backdrop-filter: blur(14px);
@@ -417,7 +419,7 @@ input::placeholder {
   z-index: 30;
   border: 1px solid var(--line);
   border-radius: 0;
-  background: var(--panel-strong);
+  background: var(--search-popover-bg);
   box-shadow: var(--shadow);
 }
 
@@ -448,7 +450,7 @@ input::placeholder {
   border-radius: 0;
   padding: 8px 10px;
   color: var(--text);
-  background: transparent;
+  background: var(--search-popover-bg);
   text-align: left;
   transition: background-color 160ms ease;
 }
@@ -1152,7 +1154,7 @@ input::placeholder {
 
   .panel {
     min-height: auto;
-    border-radius: 18px;
+    border-radius: 10px;
   }
 
   .source-panel {

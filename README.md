@@ -1,81 +1,122 @@
 # Anitabi My Maps Exporter
 
-Chrome Manifest V3 extension MVP for exporting Anitabi pilgrimage points to Google My Maps compatible files.
+## 中文
 
-## Recommended shape
+Anitabi My Maps Exporter 可以把 Anitabi 巡礼地点导出为 Google My Maps 可导入的 CSV 或 KML 文件。它既可以作为普通网页使用，也可以作为 Chrome 扩展在 Anitabi 地图页中打开右侧浮动面板。
 
-The first version is built as a shared React + TypeScript UI plus a thin Chrome extension wrapper.
+### 功能
 
-- Plain web page mode lowers installation cost and uses same-origin `/api/...` proxy routes when hosted on Cloudflare Pages or the Vite dev server.
-- Chrome extension mode adds the capabilities that a plain web page cannot reliably provide: one-click export from the current Anitabi map page, injected floating panel, and current tab URL context.
-- The two modes share the same UI and export core, so CSV/KML behavior does not diverge.
+- 从 Anitabi 地图 URL、Bangumi ID 或当前页面读取作品。
+- 展示作品信息、地点缩略图、集数、时间、坐标和来源。
+- 默认全选地点，支持逐项取消选择。
+- 支持搜索其它作品，并把多个作品的地点加入同一个临时清单。
+- 临时清单按作品分组，支持删除单点、删除整组和清空。
+- 导出 UTF-8 BOM CSV，适合 Google My Maps 识别经纬度字段。
+- 导出 KML，按作品创建文件夹并保留截图、来源和 Anitabi 链接。
+- 支持浅色、深色和跟随系统主题。
+- 支持中文、英文和日文界面。
 
-When hosted on Cloudflare Pages, the included Functions proxy these same paths:
+### 安装 Chrome 扩展
 
-- `/api/anitabi/*` -> `https://api.anitabi.cn/*`
-- `/api/search-index` -> local static `data/search-index.json`
+1. 在项目目录运行 `pnpm install && pnpm build`。
+2. 打开 Chrome 的 `chrome://extensions`。
+3. 开启 `Developer mode`。
+4. 点击 `Load unpacked`。
+5. 选择本项目目录 `anitabi-mymaps-exporter`。
 
-## Features
+### 使用
 
-- Works on `https://www.anitabi.cn/map?bangumiId=...` and `https://anitabi.cn/map?bangumiId=...`.
-- Injects a floating `导出` entry on Anitabi map pages; clicking it opens the exporter as a right-side in-page panel instead of a separate popup window.
-- Reads `bangumiId` from the current URL, manual input, or a pasted Anitabi map URL.
-- Fetches final export data from stable Anitabi API endpoints:
-  - `https://api.anitabi.cn/bangumi/{id}/lite`
-  - `https://api.anitabi.cn/bangumi/{id}/points/detail?haveImage=true`
-- Uses a prebuilt, trimmed `data/search-index.json` generated from `https://www.anitabi.cn/d/g.json` only as a search index.
-- Default-selects all points, then allows per-point selection.
-- Supports a temporary multi-work list with point deletion, group deletion, clear all, and dedupe by `{bangumiId}:{pointId}`.
-- Uses a bright anime pilgrimage workbench visual style with system, light, and dark theme modes.
-- Supports Chinese, English, and Japanese UI labels with an in-app language switch.
-- Uses React + TypeScript + Radix UI for the app shell: Radix ToggleGroup for theme/language controls, ScrollArea for dense lists, and Toast for progressive status feedback.
-- Exports:
-  - UTF-8 BOM CSV for Google My Maps import.
-  - KML with folders per work and placemark descriptions containing thumbnail, origin attribution, origin link, and Anitabi link.
+1. 打开 Anitabi 地图页，例如 `https://www.anitabi.cn/map?bangumiId=465493`。
+2. 点击页面中注入的 `导出` 按钮，或点击扩展入口打开导出器。
+3. 检查地点列表，取消不需要的地点。
+4. 点击 `加入选中`。
+5. 可继续搜索其它作品并追加地点。
+6. 在临时清单中下载 CSV 或 KML。
 
-## Install locally
+### 普通网页模式
 
-1. Open Chrome and go to `chrome://extensions`.
-1. Enable `Developer mode`.
-1. Run `pnpm install && pnpm build` in this directory.
-1. Click `Load unpacked`.
-1. Select this directory: `anitabi-mymaps-exporter`.
+可以直接访问部署后的网页，输入 Bangumi ID 或 Anitabi 地图 URL 后导出。网页模式同样支持多作品临时清单和 CSV/KML 下载。
 
-## Use
+---
+
+## English
+
+Anitabi My Maps Exporter exports Anitabi pilgrimage locations as CSV or KML files that can be imported into Google My Maps. It works as a plain web app and as a Chrome extension that opens a right-side floating panel on Anitabi map pages.
+
+### Features
+
+- Load a work from an Anitabi map URL, Bangumi ID, or the current page.
+- Show work information, place thumbnails, episode, time, coordinates, and source attribution.
+- Select all places by default, then unselect individual places.
+- Search other works and merge places from multiple works into one temporary list.
+- Group the temporary list by work, with single-place deletion, whole-group deletion, and clear-all actions.
+- Export UTF-8 BOM CSV for Google My Maps latitude/longitude import.
+- Export KML with one folder per work and placemark descriptions that keep thumbnail, source, and Anitabi links.
+- Support light, dark, and system theme modes.
+- Support Chinese, English, and Japanese UI labels.
+
+### Install the Chrome Extension
+
+1. Run `pnpm install && pnpm build` in this project.
+2. Open `chrome://extensions` in Chrome.
+3. Enable `Developer mode`.
+4. Click `Load unpacked`.
+5. Select the `anitabi-mymaps-exporter` project directory.
+
+### Usage
 
 1. Open an Anitabi map page, for example `https://www.anitabi.cn/map?bangumiId=465493`.
-1. Click the injected `导出` button, or click the extension action and choose `打开导出器`.
-1. Review the default-selected point list and uncheck unwanted points.
-1. Click `加入选中`.
-1. Search another work by Chinese name, original title, or bangumiId, load it, select points, and click `加入选中` again.
-1. Download CSV or KML from the temporary list.
+2. Click the injected `导出` button, or open the exporter from the extension action.
+3. Review the place list and unselect places you do not need.
+4. Click `加入选中`.
+5. Optionally search another work and add more places.
+6. Download CSV or KML from the temporary list.
 
-## Use as a plain web page
+### Web App Mode
 
-Run `pnpm dev` for local development, or host the Vite build output in `dist/`. Paste a bangumiId or Anitabi map URL, then export CSV/KML with the same UI.
+You can use the deployed web page directly. Enter a Bangumi ID or Anitabi map URL, then export CSV/KML with the same multi-work temporary list.
 
-For Cloudflare Pages, deploy this directory as the project root, set the build command to `pnpm build`, and set the output directory to `dist`. Keep `functions/api/anitabi/[[path]].js` and `functions/api/search-index.js` active. The app loads the static `data/search-index.json` on `http:` and `https:` pages, while `/api/search-index` remains available as a same-origin compatibility route. Extension pages still use the direct Anitabi API URLs for final export data.
+---
 
-## Google My Maps
+## 日本語
 
-- For CSV, choose the `latitude` and `longitude` columns as location fields, then use `point_cn` or `point_name` as the title field.
-- For KML, import the downloaded `.kml`; folders are grouped by work.
+Anitabi My Maps Exporter は、Anitabi の聖地巡礼スポットを Google My Maps に取り込める CSV または KML として出力するツールです。通常の Web アプリとしても、Anitabi の地図ページで右側のフローティングパネルを開く Chrome 拡張としても使えます。
 
-## Development
+### 機能
 
-The web app is Vite + React + TypeScript. The extension shell is still plain MV3 content/background/popup scripts.
-Use Node.js 24+ with Corepack-enabled pnpm 11.
+- Anitabi の地図 URL、Bangumi ID、または現在のページから作品を読み込みます。
+- 作品情報、スポットのサムネイル、話数、時間、座標、出典を表示します。
+- 初期状態では全スポットを選択し、不要なスポットだけ外せます。
+- 他の作品を検索し、複数作品のスポットを一つの一時リストに追加できます。
+- 一時リストは作品ごとにグループ化され、単一スポット削除、作品単位削除、全消去に対応します。
+- Google My Maps で緯度経度を認識しやすい UTF-8 BOM 付き CSV を出力します。
+- 作品ごとのフォルダを持つ KML を出力し、サムネイル、出典、Anitabi リンクを保持します。
+- ライト、ダーク、システム連動テーマに対応します。
+- 中国語、英語、日本語の UI 表示に対応します。
 
-```sh
-corepack pnpm install
-corepack pnpm dev
-curl -L https://www.anitabi.cn/d/g.json -o tmp/g.json
-corepack pnpm build:search-index
-corepack pnpm typecheck
-corepack pnpm build
-corepack pnpm test
-```
+### Chrome 拡張のインストール
 
-## Notes
+1. このプロジェクトで `pnpm install && pnpm build` を実行します。
+2. Chrome で `chrome://extensions` を開きます。
+3. `Developer mode` を有効にします。
+4. `Load unpacked` をクリックします。
+5. `anitabi-mymaps-exporter` のプロジェクトディレクトリを選択します。
 
-This extension keeps origin and origin URL fields next to exported screenshot data. Exported data and source attribution should follow Anitabi's CC BY-NC-SA 4.0 guidance. KMZ is not implemented in this MVP; KML is provided as the Google My Maps and Google Earth import format.
+### 使い方
+
+1. `https://www.anitabi.cn/map?bangumiId=465493` などの Anitabi 地図ページを開きます。
+2. ページ内に追加された `导出` ボタン、または拡張機能の入口からエクスポーターを開きます。
+3. スポット一覧を確認し、不要なスポットの選択を外します。
+4. `加入选中` をクリックします。
+5. 必要に応じて他の作品を検索し、スポットを追加します。
+6. 一時リストから CSV または KML をダウンロードします。
+
+### Web アプリモード
+
+デプロイ済みの Web ページを直接利用できます。Bangumi ID または Anitabi 地図 URL を入力し、複数作品対応の一時リストから CSV/KML を出力できます。
+
+---
+
+## Source Attribution
+
+Exported data keeps Anitabi origin and origin URL fields where available. Please follow the source attribution and CC BY-NC-SA 4.0 guidance from Anitabi and the underlying contributors.

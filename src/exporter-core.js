@@ -38,6 +38,18 @@
     return text;
   }
 
+  function isCoverCandidate(value) {
+    const text = asText(value).trim();
+    return /^https?:\/\//i.test(text) || text.startsWith("/");
+  }
+
+  function chooseCover() {
+    for (let index = 0; index < arguments.length; index += 1) {
+      if (isCoverCandidate(arguments[index])) return toAbsoluteAnitabiUrl(arguments[index]);
+    }
+    return "";
+  }
+
   function subjectMapUrl(workId, pointId) {
     const base = "https://www.anitabi.cn/map?bangumiId=" + encodeURIComponent(workId);
     if (!pointId) return base;
@@ -242,7 +254,7 @@
         const alias = asText(isArrayItem ? item[2] : item && item.alias);
         const title = asText(isArrayItem ? item[3] : item && item.title);
         const city = asText(isArrayItem ? item[4] : item && item.city);
-        const cover = toAbsoluteAnitabiUrl(isArrayItem ? item[15] || item[6] : item && item.cover);
+        const cover = isArrayItem ? chooseCover(item[15], item[6]) : toAbsoluteAnitabiUrl(item && item.cover);
         const pointsLength = isArrayItem
           ? Array.isArray(item[12]) ? Math.floor(item[12].length / 4) : Number(item[13]) || 0
           : Number(item && item.pointsLength) || 0;

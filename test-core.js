@@ -54,12 +54,13 @@ assert.ok(kml.includes("CC BY-NC-SA 4.0"));
 
 const index = core.parseSearchIndex([
   [
-    [465493, "", 0, "anemoi", "北海道", "#65c3c2", "/images/bangumi/465493.jpg", 0, "TV", 0, 0, 0, ["a", 1, 2, 3]],
+    [465493, "", 0, "anemoi", "北海道", "#65c3c2", "/images/bangumi/465493.jpg", 0, "TV", 0, 0, 0, ["a", 1, 2, 3], 0, [], 464],
     [115908, "吹响吧！上低音号", 0, "響け！ユーフォニアム", "宇治市", "#02a7bd", "/images/bangumi/115908.jpg", 0, "TV", 0, 0, 0, []]
   ],
   2
 ]);
 assert.strictEqual(index.length, 2);
+assert.strictEqual(index[0].cover, "https://www.anitabi.cn/images/bangumi/465493.jpg");
 assert.strictEqual(core.searchWorks(index, "吹响", 5)[0].id, "115908");
 assert.strictEqual(core.searchWorks(index, "465493", 5)[0].title, "anemoi");
 

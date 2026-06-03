@@ -17,6 +17,18 @@ function toAbsoluteAnitabiUrl(url) {
   return text;
 }
 
+function isCoverCandidate(value) {
+  const text = asText(value).trim();
+  return /^https?:\/\//i.test(text) || text.startsWith("/");
+}
+
+function chooseCover() {
+  for (const value of arguments) {
+    if (isCoverCandidate(value)) return toAbsoluteAnitabiUrl(value);
+  }
+  return "";
+}
+
 function toSearchItem(item) {
   if (!Array.isArray(item)) return null;
   const id = asText(item[0]);
@@ -27,7 +39,7 @@ function toSearchItem(item) {
     alias: asText(item[2]),
     title: asText(item[3]),
     city: asText(item[4]),
-    cover: toAbsoluteAnitabiUrl(item[15] || item[6]),
+    cover: chooseCover(item[15], item[6]),
     pointsLength: Array.isArray(item[12]) ? Math.floor(item[12].length / 4) : Number(item[13]) || 0
   };
 }
