@@ -63,6 +63,16 @@ assert.strictEqual(index.length, 2);
 assert.strictEqual(core.searchWorks(index, "吹响", 5)[0].id, "115908");
 assert.strictEqual(core.searchWorks(index, "465493", 5)[0].title, "anemoi");
 
+const slimIndex = core.parseSearchIndex({
+  version: 1,
+  items: [
+    { id: "465493", cn: "", alias: "", title: "anemoi", city: "北海道", cover: "https://www.anitabi.cn/images/bangumi/465493.jpg", pointsLength: 1 },
+    { id: "115908", cn: "吹响吧！上低音号", alias: "", title: "響け！ユーフォニアム", city: "宇治市", cover: "https://www.anitabi.cn/images/bangumi/115908.jpg", pointsLength: 0 }
+  ]
+});
+assert.strictEqual(slimIndex.length, 2);
+assert.strictEqual(core.searchWorks(slimIndex, "宇治", 5)[0].id, "115908");
+
 const filename = core.makeFileName(rows, ".kml", new Date("2026-06-02T00:00:00Z"));
 assert.strictEqual(filename, "anitabi-465493-20260602.kml");
 

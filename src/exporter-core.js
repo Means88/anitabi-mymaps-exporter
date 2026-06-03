@@ -232,18 +232,20 @@
   }
 
   function parseSearchIndex(raw) {
-    const source = Array.isArray(raw && raw[0]) ? raw[0] : raw;
+    const source = Array.isArray(raw && raw.items) ? raw.items : Array.isArray(raw && raw[0]) ? raw[0] : raw;
     if (!Array.isArray(source)) return [];
     return source
-      .filter(Array.isArray)
       .map((item) => {
-        const id = asText(item[0]);
-        const cn = asText(item[1]);
-        const alias = asText(item[2]);
-        const title = asText(item[3]);
-        const city = asText(item[4]);
-        const cover = toAbsoluteAnitabiUrl(item[15] || item[6]);
-        const pointsLength = Array.isArray(item[12]) ? Math.floor(item[12].length / 4) : Number(item[13]) || 0;
+        const isArrayItem = Array.isArray(item);
+        const id = asText(isArrayItem ? item[0] : item && item.id);
+        const cn = asText(isArrayItem ? item[1] : item && item.cn);
+        const alias = asText(isArrayItem ? item[2] : item && item.alias);
+        const title = asText(isArrayItem ? item[3] : item && item.title);
+        const city = asText(isArrayItem ? item[4] : item && item.city);
+        const cover = toAbsoluteAnitabiUrl(isArrayItem ? item[15] || item[6] : item && item.cover);
+        const pointsLength = isArrayItem
+          ? Array.isArray(item[12]) ? Math.floor(item[12].length / 4) : Number(item[13]) || 0
+          : Number(item && item.pointsLength) || 0;
         const haystack = [id, cn, alias, title, city].join(" ").toLowerCase();
         return { id, cn, alias, title, city, cover, pointsLength, haystack };
       })

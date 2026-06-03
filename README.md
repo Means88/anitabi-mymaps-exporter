@@ -7,13 +7,13 @@ Chrome Manifest V3 extension MVP for exporting Anitabi pilgrimage points to Goog
 The first version is built as a shared React + TypeScript UI plus a thin Chrome extension wrapper.
 
 - Plain web page mode lowers installation cost and uses same-origin `/api/...` proxy routes when hosted on Cloudflare Pages or the Vite dev server.
-- Chrome extension mode adds the capabilities that a plain web page cannot reliably provide: one-click export from the current Anitabi map page, injected floating panel, current tab URL context, and access to `https://www.anitabi.cn/d/g.json` through host permissions when the search index lacks CORS headers.
+- Chrome extension mode adds the capabilities that a plain web page cannot reliably provide: one-click export from the current Anitabi map page, injected floating panel, and current tab URL context.
 - The two modes share the same UI and export core, so CSV/KML behavior does not diverge.
 
 When hosted on Cloudflare Pages, the included Functions proxy these same paths:
 
 - `/api/anitabi/*` -> `https://api.anitabi.cn/*`
-- `/api/search-index` -> `https://www.anitabi.cn/d/g.json`
+- `/api/search-index` -> local static `data/search-index.json`
 
 ## Features
 
@@ -23,7 +23,7 @@ When hosted on Cloudflare Pages, the included Functions proxy these same paths:
 - Fetches final export data from stable Anitabi API endpoints:
   - `https://api.anitabi.cn/bangumi/{id}/lite`
   - `https://api.anitabi.cn/bangumi/{id}/points/detail?haveImage=true`
-- Uses `https://www.anitabi.cn/d/g.json` only as a search index.
+- Uses a prebuilt, trimmed `data/search-index.json` generated from `https://www.anitabi.cn/d/g.json` only as a search index.
 - Default-selects all points, then allows per-point selection.
 - Supports a temporary multi-work list with point deletion, group deletion, clear all, and dedupe by `{bangumiId}:{pointId}`.
 - Uses a bright anime pilgrimage workbench visual style with system, light, and dark theme modes.
@@ -54,7 +54,7 @@ When hosted on Cloudflare Pages, the included Functions proxy these same paths:
 
 Run `pnpm dev` for local development, or host the Vite build output in `dist/`. Paste a bangumiId or Anitabi map URL, then export CSV/KML with the same UI.
 
-For Cloudflare Pages, deploy this directory as the project root, set the build command to `pnpm build`, and set the output directory to `dist`. Keep `functions/api/anitabi/[[path]].js` and `functions/api/search-index.js` active. The app will call the same-origin proxy automatically on `http:` and `https:` pages; extension pages still use the direct Anitabi API URLs.
+For Cloudflare Pages, deploy this directory as the project root, set the build command to `pnpm build`, and set the output directory to `dist`. Keep `functions/api/anitabi/[[path]].js` and `functions/api/search-index.js` active. The app loads the static `data/search-index.json` on `http:` and `https:` pages, while `/api/search-index` remains available as a same-origin compatibility route. Extension pages still use the direct Anitabi API URLs for final export data.
 
 ## Google My Maps
 
@@ -69,6 +69,8 @@ Use Node.js 24+ with Corepack-enabled pnpm 11.
 ```sh
 corepack pnpm install
 corepack pnpm dev
+curl -L https://www.anitabi.cn/d/g.json -o tmp/g.json
+corepack pnpm build:search-index
 corepack pnpm typecheck
 corepack pnpm build
 corepack pnpm test

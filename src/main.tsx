@@ -14,7 +14,7 @@ const IS_EMBEDDED = APP_PARAMS.get("embedded") === "1";
 const IS_EXTENSION = location.protocol === "chrome-extension:";
 const USE_PROXY = !IS_EXTENSION && location.protocol !== "file:";
 const API_BASE = USE_PROXY ? "/api/anitabi" : core.API_BASE;
-const SEARCH_INDEX_URL = USE_PROXY ? "/api/search-index" : core.SEARCH_INDEX_URL;
+const SEARCH_INDEX_URL = USE_PROXY ? "/data/search-index.json" : core.SEARCH_INDEX_URL;
 
 const FA_ICONS = {
   arrowsRotate: ["0 0 512 512", "M105.1 202.6c7.7-21.8 20.2-42.3 37.8-59.8 62.5-62.5 163.8-62.5 226.3 0L386.3 160H336c-17.7 0-32 14.3-32 32s14.3 32 32 32h128c17.7 0 32-14.3 32-32V64c0-17.7-14.3-32-32-32s-32 14.3-32 32v51.2l-17.5-17.5c-87.5-87.5-229.3-87.5-316.8 0-24.6 24.6-42.2 53.7-52.8 84.7-5.7 16.7 3.2 34.9 19.9 40.6s34.9-3.2 40.6-19.9zM39 289.4c-16.7-5.7-34.9 3.2-40.6 19.9s3.2 34.9 19.9 40.6c10.6 31 28.2 60.1 52.8 84.7 87.5 87.5 229.3 87.5 316.8 0l17.5-17.5V448c0 17.7 14.3 32 32 32s32-14.3 32-32V320c0-17.7-14.3-32-32-32H309.4c-17.7 0-32 14.3-32 32s14.3 32 32 32h50.3l-17.1 17.1c-62.5 62.5-163.8 62.5-226.3 0-17.6-17.6-30.1-38-37.8-59.8-5.7-16.7-23.9-25.6-40.6-19.9z"],
