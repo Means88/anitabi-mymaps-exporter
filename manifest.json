@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Anitabi My Maps Exporter",
+  "description": "Export Anitabi pilgrimage points to CSV or KML for Google My Maps.",
+  "version": "0.1.0",
+  "action": {
+    "default_title": "Anitabi Exporter",
+    "default_popup": "src/popup.html"
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.anitabi.cn/map*",
+        "https://anitabi.cn/map*"
+      ],
+      "js": [
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "dist/index.html",
+        "dist/assets/*",
+        "dist/src/exporter-core.js"
+      ],
+      "matches": [
+        "https://www.anitabi.cn/*",
+        "https://anitabi.cn/*"
+      ]
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://api.anitabi.cn/*",
+    "https://www.anitabi.cn/d/g.json"
+  ]
+}

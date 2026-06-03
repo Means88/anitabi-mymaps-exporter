@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.vite/
+.wrangler/
+
+tmp/
+screenshot-*.png
+
+.DS_Store
+*.log
