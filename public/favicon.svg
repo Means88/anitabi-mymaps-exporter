@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Anitabi My Maps Exporter icon">
+  <rect x="28" y="28" width="456" height="456" rx="104" fill="#fff7ec"/>
+  <rect x="28" y="28" width="456" height="456" rx="104" fill="none" stroke="#4db7ff" stroke-width="32"/>
+  <path d="M256 78c-92 0-166 72-166 161 0 122 139 216 159 228a14 14 0 0 0 14 0c20-12 159-106 159-228 0-89-74-161-166-161Z" fill="#ff6fae"/>
+  <circle cx="256" cy="238" r="70" fill="#fffdf9"/>
+  <circle cx="256" cy="238" r="32" fill="#4db7ff"/>
+</svg>
