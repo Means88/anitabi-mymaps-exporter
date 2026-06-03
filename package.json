@@ -12,6 +12,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
+    "package:chrome": "vite build && node scripts/package-chrome-extension.ts",
     "build:search-index": "node scripts/build-search-index.ts tmp/g.json public/data/search-index.json",
     "lint": "eslint .",
     "preview": "vite preview --host 127.0.0.1",

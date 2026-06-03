@@ -1,5 +1,6 @@
 node_modules/
 dist/
+chrome-extension-zips/
 .vite/
 .wrangler/
 
