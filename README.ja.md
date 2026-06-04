@@ -18,6 +18,10 @@ Anitabi My Maps Exporter は、Anitabi の聖地巡礼スポットを Google My 
 
 ## Chrome 拡張のインストール
 
+[Chrome Web Store](https://chromewebstore.google.com/detail/anitabi-my-maps-exporter/fdhehgohnlgdlnhbngagpbcedfmnncee) からインストールできます。
+
+ローカル開発版をインストールする場合:
+
 1. このプロジェクトで `pnpm install && pnpm build` を実行します。
 2. Chrome で `chrome://extensions` を開きます。
 3. `Developer mode` を有効にします。

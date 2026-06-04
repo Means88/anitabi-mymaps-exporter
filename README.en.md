@@ -18,6 +18,10 @@ Anitabi My Maps Exporter exports Anitabi pilgrimage locations as CSV or KML file
 
 ## Install the Chrome Extension
 
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/anitabi-my-maps-exporter/fdhehgohnlgdlnhbngagpbcedfmnncee).
+
+For a local development install:
+
 1. Run `pnpm install && pnpm build` in this project.
 2. Open `chrome://extensions` in Chrome.
 3. Enable `Developer mode`.

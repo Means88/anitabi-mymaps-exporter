@@ -18,6 +18,10 @@ Anitabi My Maps Exporter 可以把 Anitabi 巡礼地点导出为 Google My Maps 
 
 ## 安装 Chrome 扩展
 
+可以从 [Chrome Web Store](https://chromewebstore.google.com/detail/anitabi-my-maps-exporter/fdhehgohnlgdlnhbngagpbcedfmnncee) 安装。
+
+本地构建安装：
+
 1. 在项目目录运行 `pnpm install && pnpm build`。
 2. 打开 Chrome 的 `chrome://extensions`。
 3. 开启 `Developer mode`。
