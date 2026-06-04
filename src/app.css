@@ -26,6 +26,9 @@
   --panel-strong: rgba(255, 255, 255, 0.96);
   --surface: rgba(255, 255, 255, 0.9);
   --search-popover-bg: #ffffff;
+  --search-result-hover: rgba(77, 183, 255, 0.1);
+  --search-result-title: #253044;
+  --search-result-meta: #246d98;
   --point-surface: #fffdf9;
   --point-selected: #fffdf9;
   --text: #253044;
@@ -52,6 +55,9 @@
   --panel-strong: rgba(40, 58, 86, 0.96);
   --surface: rgba(44, 64, 96, 0.9);
   --search-popover-bg: #283a56;
+  --search-result-hover: rgba(77, 183, 255, 0.16);
+  --search-result-title: #f8fbff;
+  --search-result-meta: #aaddff;
   --point-surface: rgba(38, 53, 74, 0.96);
   --point-selected: rgba(38, 53, 74, 0.96);
   --text: #f8fbff;
@@ -355,6 +361,7 @@ button.text-button:hover:not(:disabled) {
 .cart-panel {
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .controls,
@@ -445,6 +452,14 @@ input::placeholder {
   overflow: hidden;
 }
 
+.search-results-scroll [data-radix-scroll-area-viewport],
+.point-list-scroll [data-radix-scroll-area-viewport],
+.cart-list-scroll [data-radix-scroll-area-viewport] {
+  width: 100%;
+  height: 100%;
+  max-height: inherit;
+}
+
 .search-results-empty {
   min-height: 44px;
   padding: 12px 14px;
@@ -466,7 +481,7 @@ input::placeholder {
   border-bottom: 1px solid var(--line);
   border-radius: 0;
   padding: 8px 10px;
-  color: var(--text);
+  color: var(--search-result-title);
   background: var(--search-popover-bg);
   text-align: left;
   transition: background-color 160ms ease;
@@ -477,15 +492,15 @@ input::placeholder {
 }
 
 .search-result:hover {
-  background: rgba(77, 183, 255, 0.1);
+  background: var(--search-result-hover);
 }
 
 .search-result .result-meta:not(.result-points) {
-  color: #246d98;
+  color: var(--search-result-meta);
 }
 
-:root[data-theme="dark"] .search-result .result-meta:not(.result-points) {
-  color: #aaddff;
+.search-result .result-points {
+  color: var(--search-result-title);
 }
 
 .search-result img,
@@ -829,6 +844,7 @@ input::placeholder {
 
 .cart-list-scroll {
   flex: 1;
+  min-height: 0;
   max-height: calc(100vh - 248px);
   overflow: hidden;
 }
@@ -1047,6 +1063,10 @@ input::placeholder {
     --panel: rgba(34, 50, 74, 0.84);
     --panel-strong: rgba(40, 58, 86, 0.96);
     --surface: rgba(44, 64, 96, 0.9);
+    --search-popover-bg: #283a56;
+    --search-result-hover: rgba(77, 183, 255, 0.16);
+    --search-result-title: #f8fbff;
+    --search-result-meta: #aaddff;
     --point-surface: rgba(38, 53, 74, 0.96);
     --point-selected: rgba(38, 53, 74, 0.96);
     --text: #f8fbff;
