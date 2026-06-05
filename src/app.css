@@ -219,24 +219,46 @@ button.text-button:hover:not(:disabled) {
   gap: 10px;
 }
 
-.topbar-picker-trigger {
-  width: 34px;
+.topbar-picker-trigger,
+.topbar-link {
   min-height: 34px;
   padding: 0;
   border: 1px solid var(--line);
+  border-radius: 999px;
   color: var(--text);
   background: var(--panel);
   box-shadow: none;
+  text-decoration: none;
+}
+
+.topbar-picker-trigger,
+.topbar-icon-link {
+  width: 34px;
+}
+
+.topbar-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.topbar-store-link {
+  gap: 7px;
+  padding: 0 12px;
+  white-space: nowrap;
 }
 
 .topbar-picker-trigger:hover:not(:disabled),
+.topbar-link:hover,
 .topbar-picker-trigger[data-state="open"] {
   color: var(--button-text);
   background: var(--accent);
   opacity: 1;
 }
 
-.topbar-picker-trigger .fa-icon {
+.topbar-picker-trigger .fa-icon,
+.topbar-link .fa-icon {
   width: 14px;
   height: 14px;
 }
@@ -1019,14 +1041,17 @@ input::placeholder {
 }
 
 :root[data-embedded="true"] .topbar-actions {
-  align-items: stretch;
-  flex-direction: column;
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
   width: 100%;
 }
 
 :root[data-embedded="true"] .status {
   justify-content: flex-start;
-  width: 100%;
+  flex: 1 1 180px;
+  width: auto;
+  max-width: none;
   text-align: left;
 }
 
