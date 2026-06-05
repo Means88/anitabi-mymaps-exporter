@@ -13,9 +13,12 @@ const APP_PARAMS = new URLSearchParams(window.location.search);
 const INITIAL_BANGUMI_ID = APP_PARAMS.get("bangumiId") || "";
 const IS_EMBEDDED = APP_PARAMS.get("embedded") === "1";
 const IS_EXTENSION = location.protocol === "chrome-extension:";
+const IS_STANDALONE = !IS_EMBEDDED;
 const USE_PROXY = !IS_EXTENSION && location.protocol !== "file:";
 const API_BASE = USE_PROXY ? "/api/anitabi" : core.API_BASE;
 const SEARCH_INDEX_URL = USE_PROXY ? "/data/search-index.json" : core.SEARCH_INDEX_URL;
+const GITHUB_PROJECT_URL = "https://github.com/Means88/anitabi-mymaps-exporter";
+const CHROME_WEB_STORE_URL = "https://chromewebstore.google.com/detail/anitabi-my-maps-exporter/fdhehgohnlgdlnhbngagpbcedfmnncee";
 
 const FA_ICONS = {
   arrowsRotate: ["0 0 512 512", "M105.1 202.6c7.7-21.8 20.2-42.3 37.8-59.8 62.5-62.5 163.8-62.5 226.3 0L386.3 160H336c-17.7 0-32 14.3-32 32s14.3 32 32 32h128c17.7 0 32-14.3 32-32V64c0-17.7-14.3-32-32-32s-32 14.3-32 32v51.2l-17.5-17.5c-87.5-87.5-229.3-87.5-316.8 0-24.6 24.6-42.2 53.7-52.8 84.7-5.7 16.7 3.2 34.9 19.9 40.6s34.9-3.2 40.6-19.9zM39 289.4c-16.7-5.7-34.9 3.2-40.6 19.9s3.2 34.9 19.9 40.6c10.6 31 28.2 60.1 52.8 84.7 87.5 87.5 229.3 87.5 316.8 0l17.5-17.5V448c0 17.7 14.3 32 32 32s32-14.3 32-32V320c0-17.7-14.3-32-32-32H309.4c-17.7 0-32 14.3-32 32s14.3 32 32 32h50.3l-17.1 17.1c-62.5 62.5-163.8 62.5-226.3 0-17.6-17.6-30.1-38-37.8-59.8-5.7-16.7-23.9-25.6-40.6-19.9z"],
@@ -24,6 +27,7 @@ const FA_ICONS = {
   fileCsv: ["0 0 384 512", "M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm-96 252c0 13.3-10.7 24-24 24H88c-22.1 0-40-17.9-40-40v-40c0-22.1 17.9-40 40-40h16c13.3 0 24 10.7 24 24s-10.7 24-24 24H88v24h16c13.3 0 24 10.7 24 24zm84-96h-40c-6.6 0-12 5.4-12 12v12c0 6.6 5.4 12 12 12h16c26.5 0 48 21.5 48 48s-21.5 48-48 48h-40c-13.3 0-24-10.7-24-24s10.7-24 24-24h40c6.6 0 12-5.4 12-12s-5.4-12-12-12h-16c-26.5 0-48-21.5-48-48v-12c0-26.5 21.5-48 48-48h40c13.3 0 24 10.7 24 24s-10.7 24-24 24zm120-68l-31.6 95.1c-3.3 9.9-12.4 16.9-22.8 16.9s-19.5-7-22.8-16.9L223.2 224c-4.2-12.6 2.6-26.2 15.2-30.4s26.2 2.6 30.4 15.2l8.8 26.4 8.8-26.4c4.2-12.6 17.8-19.4 30.4-15.2S336.2 211.4 332 224zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l78.9 79c4.5 4.5 7 10.6 7 17z"],
   desktop: ["0 0 576 512", "M64 64C28.7 64 0 92.7 0 128v224c0 35.3 28.7 64 64 64h160l-10.7 32H160c-17.7 0-32 14.3-32 32s14.3 32 32 32h256c17.7 0 32-14.3 32-32s-14.3-32-32-32h-53.3L352 416h160c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H64zm448 64v224H64V128h448z"],
   externalLink: ["0 0 512 512", "M320 0c-17.7 0-32 14.3-32 32s14.3 32 32 32h82.7L201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L448 109.3V192c0 17.7 14.3 32 32 32s32-14.3 32-32V32c0-17.7-14.3-32-32-32H320zM80 32C35.8 32 0 67.8 0 112v320c0 44.2 35.8 80 80 80h320c44.2 0 80-35.8 80-80V320c0-17.7-14.3-32-32-32s-32 14.3-32 32v112c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V112c0-8.8 7.2-16 16-16h112c17.7 0 32-14.3 32-32s-14.3-32-32-32H80z"],
+  github: ["0 0 496 512", "M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-2.3-3-3.6-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.4-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.4-.3 74.9-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8z"],
   globe: ["0 0 512 512", "M352 256c0 22.2-1.2 43.6-3.3 64H163.3c-2.2-20.4-3.3-41.8-3.3-64s1.2-43.6 3.3-64h185.3c2.2 20.4 3.3 41.8 3.3 64zM503.9 192c5.3 20.5 8.1 41.9 8.1 64s-2.8 43.5-8.1 64H413.5c1.6-20.6 2.5-42 2.5-64s-.9-43.4-2.5-64h90.4zM458.4 128h-56.3c-7.6-38.1-19.9-70.2-35.7-92.9 37 17.8 68.7 50.1 92 92.9zM344.3 128H167.7c6.1-27.4 14.7-50.6 24.8-67.6C210.7 29.8 233.4 16 256 16s45.3 13.8 63.5 44.4c10.1 17 18.7 40.2 24.8 67.6zM145.6 35.1c-15.8 22.7-28.1 54.8-35.7 92.9H53.6c23.3-42.8 55-75.1 92-92.9zM8.1 192h90.4C96.9 212.6 96 234 96 256s.9 43.4 2.5 64H8.1C2.8 299.5 0 278.1 0 256s2.8-43.5 8.1-64zM167.7 384h176.6c-6.1 27.4-14.7 50.6-24.8 67.6C301.3 482.2 278.6 496 256 496s-45.3-13.8-63.5-44.4c-10.1-17-18.7-40.2-24.8-67.6zM109.9 384c7.6 38.1 19.9 70.2 35.7 92.9-37-17.8-68.7-50.1-92-92.9h56.3zm292.2 0h56.3c-23.3 42.8-55 75.1-92 92.9 15.8-22.7 28.1-54.8 35.7-92.9z"],
   locationDot: ["0 0 384 512", "M172.3 501.7C27 291 0 269.4 0 192 0 86 86 0 192 0s192 86 192 192c0 77.4-27 99-172.3 309.7-9.5 13.8-29.9 13.8-39.4 0zM192 272c44.2 0 80-35.8 80-80s-35.8-80-80-80-80 35.8-80 80 35.8 80 80 80z"],
   magnifyingGlass: ["0 0 512 512", "M416 208c0 45.9-14.9 88.3-40 122.7l126.6 126.7c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376C296.3 401.1 253.9 416 208 416 93.1 416 0 322.9 0 208S93.1 0 208 0s208 93.1 208 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"],
@@ -76,6 +80,8 @@ const MESSAGES = {
     themeLight: "浅色",
     themeDark: "深色",
     languageLabel: "语言",
+    githubProject: "GitHub 项目",
+    chromeWebStore: "Chrome 扩展商店",
     statusReady: "就绪",
     bangumiLabel: "Bangumi ID / Anitabi URL",
     anitabiMapLink: "打开 anitabi.cn/map",
@@ -126,6 +132,8 @@ const MESSAGES = {
     themeLight: "Light",
     themeDark: "Dark",
     languageLabel: "Language",
+    githubProject: "GitHub project",
+    chromeWebStore: "Chrome Web Store",
     statusReady: "Ready",
     bangumiLabel: "Bangumi ID / Anitabi URL",
     anitabiMapLink: "Open anitabi.cn/map",
@@ -176,6 +184,8 @@ const MESSAGES = {
     themeLight: "ライト",
     themeDark: "ダーク",
     languageLabel: "言語",
+    githubProject: "GitHub プロジェクト",
+    chromeWebStore: "Chrome ウェブストア",
     statusReady: "準備完了",
     bangumiLabel: "Bangumi ID / Anitabi URL",
     anitabiMapLink: "anitabi.cn/map を開く",
@@ -498,6 +508,15 @@ function App() {
           <p>{t("appIntro")}</p>
         </div>
         <div className="topbar-actions">
+          <a className="topbar-link topbar-icon-link" href={GITHUB_PROJECT_URL} target="_blank" rel="noreferrer" title={t("githubProject")} aria-label={t("githubProject")}>
+            <Icon name="github" />
+          </a>
+          {IS_STANDALONE ? (
+            <a className="topbar-link topbar-store-link" href={CHROME_WEB_STORE_URL} target="_blank" rel="noreferrer" title={t("chromeWebStore")}>
+              <Icon name="externalLink" />
+              <span>{t("chromeWebStore")}</span>
+            </a>
+          ) : null}
           <Popover.Root open={themeMenuOpen} onOpenChange={setThemeMenuOpen}>
             <Popover.Trigger className="topbar-picker-trigger" title={t("themeLabel")} aria-label={t("themeLabel")}>
               <Icon name={themeIcon} />
