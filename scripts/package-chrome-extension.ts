@@ -13,8 +13,10 @@ interface ZipEntry {
 
 const ROOT = process.cwd();
 const PACKAGE_JSON = JSON.parse(await readFile(join(ROOT, "package.json"), "utf8")) as { name: string; version: string };
+const ROOT_MANIFEST = join(ROOT, "manifest.json");
 const OUT_DIR = join(ROOT, "chrome-extension-zips");
 const OUT_FILE = join(OUT_DIR, `${PACKAGE_JSON.name}-${PACKAGE_JSON.version}.zip`);
+const CHROME_EXCLUDED_PREFIXES = ["dist/data/geo2025/"];
 const ZIP_VERSION = 20;
 const UTF8_FLAG = 0x0800;
 const DEFLATE_METHOD = 8;
@@ -50,6 +52,10 @@ function dosDateTime(date: Date) {
 
 function normalizeZipPath(path: string) {
   return path.split(sep).join("/");
+}
+
+function shouldPackage(name: string) {
+  return !CHROME_EXCLUDED_PREFIXES.some((prefix) => name.startsWith(prefix));
 }
 
 async function collectFiles(path: string) {
@@ -114,15 +120,17 @@ function endOfCentralDirectory(entryCount: number, centralSize: number, centralO
 }
 
 async function buildEntries() {
-  const sourceFiles = [join(ROOT, "manifest.json"), ...(await collectFiles(join(ROOT, "dist")))];
+  const sourceFiles = [ROOT_MANIFEST, ...(await collectFiles(join(ROOT, "dist")))];
   const entries: ZipEntry[] = [];
   let localOffset = 0;
 
   for (const sourceFile of sourceFiles.sort()) {
+    const relativeName = normalizeZipPath(relative(ROOT, sourceFile));
+    if (!shouldPackage(relativeName)) continue;
+    const name = sourceFile === ROOT_MANIFEST ? basename(sourceFile) : relativeName;
     const data = await readFile(sourceFile);
     const compressedData = deflateRawSync(data, { level: 9 });
     const metadata = await stat(sourceFile);
-    const name = sourceFile.endsWith("manifest.json") ? basename(sourceFile) : normalizeZipPath(relative(ROOT, sourceFile));
     const nameBuffer = Buffer.from(name);
     const entry = { name, data, compressedData, date: metadata.mtime, crc: crc32(data), localOffset };
     localOffset += 30 + nameBuffer.length + compressedData.length;

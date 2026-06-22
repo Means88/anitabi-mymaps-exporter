@@ -102,6 +102,12 @@ function searchItem(work: Record<string, unknown>): Record<string, unknown> | nu
   };
 }
 
+function snapshotGeneratedAt(modified: unknown): string {
+  const timestamp = Number(modified);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return "";
+  return new Date(timestamp).toISOString();
+}
+
 const geo2025 = JSON.parse(readFileSync(geoInputPath, "utf8"));
 const users = parseUsersCsv(readFileSync(usersInputPath, "utf8"));
 const works = Array.isArray(geo2025.bangumis) ? geo2025.bangumis : [];
@@ -148,7 +154,7 @@ writeFileSync(join(outputDir, "manifest.json"), JSON.stringify({
 const searchItems = works.map((work: Record<string, unknown>) => searchItem(work)).filter(Boolean);
 const searchPayload = {
   version: 1,
-  generatedAt: new Date().toISOString(),
+  generatedAt: snapshotGeneratedAt(geo2025.modified),
   source: "indexeddb-geo2025-snapshot",
   modified: geo2025.modified,
   items: searchItems
