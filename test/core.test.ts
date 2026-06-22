@@ -6,7 +6,7 @@ const lite = {
   cn: "",
   title: "anemoi",
   city: "北海道",
-  cover: "http://lain.bgm.tv/pic/cover/l/cc/5d/465493_e3A48.jpg?plan=h160"
+  cover: "http://bgm-api.anitabi.cn/pic/cover/l/cc/5d/465493_e3A48.jpg?plan=h160"
 };
 
 const points = [
@@ -93,6 +93,17 @@ describe("core export helpers", () => {
     const rows = core.buildRows(lite, points);
 
     expect(rows[0].work_cover).toBe("https://lain.bgm.tv/pic/cover/l/cc/5d/465493_e3A48.jpg?plan=h160");
+  });
+
+  it("rewrites bgm-api image hosts to lain.bgm.tv for display and export", () => {
+    expect(core.toAbsoluteAnitabiUrl("https://bgm-api.anitabi.cn/img/pic/cover/l/1c/e4/583729_r6BNq.jpg")).toBe("https://lain.bgm.tv/img/pic/cover/l/1c/e4/583729_r6BNq.jpg");
+
+    const rows = core.buildRows({
+      ...lite,
+      cover: "https://bgm-api.anitabi.cn/img/pic/cover/l/1c/e4/583729_r6BNq.jpg"
+    }, points);
+
+    expect(rows[0].work_cover).toBe("https://lain.bgm.tv/img/pic/cover/l/1c/e4/583729_r6BNq.jpg");
   });
 
   it("localizes KML work and point names from the UI language", () => {

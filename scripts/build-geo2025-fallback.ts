@@ -8,17 +8,22 @@ const searchIndexOutputPath = process.argv[5] || "public/data/search-index.json"
 
 const ANITABI_ORIGIN = "https://www.anitabi.cn";
 const ANITABI_IMAGE_ORIGIN = "https://img-tc.anitabi.cn";
+const BGM_IMAGE_ORIGIN = "https://lain.bgm.tv";
 
 function asText(value: unknown): string {
   if (value === null || value === undefined || value === 0) return "";
   return String(value);
 }
 
+function normalizeExternalImageOrigin(url: string): string {
+  return url.replace(/^https?:\/\/bgm-api\.anitabi\.cn(?=\/|$)/i, BGM_IMAGE_ORIGIN);
+}
+
 function toAbsoluteAnitabiUrl(url: unknown): string {
   const text = asText(url).trim();
   if (!text) return "";
-  if (/^http:\/\//i.test(text)) return text.replace(/^http:\/\//i, "https://");
-  if (/^https?:\/\//i.test(text)) return text;
+  if (/^http:\/\//i.test(text)) return normalizeExternalImageOrigin(text.replace(/^http:\/\//i, "https://"));
+  if (/^https?:\/\//i.test(text)) return normalizeExternalImageOrigin(text);
   if (text.startsWith("/images/points/")) return ANITABI_IMAGE_ORIGIN + "/" + text.slice("/images/".length);
   if (text.startsWith("/")) return ANITABI_ORIGIN + text;
   return text;
