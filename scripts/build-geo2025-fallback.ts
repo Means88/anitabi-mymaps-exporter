@@ -24,7 +24,7 @@ function toAbsoluteAnitabiUrl(url: unknown): string {
   if (!text) return "";
   if (/^http:\/\//i.test(text)) return normalizeExternalImageOrigin(text.replace(/^http:\/\//i, "https://"));
   if (/^https?:\/\//i.test(text)) return normalizeExternalImageOrigin(text);
-  if (text.startsWith("/images/points/")) return ANITABI_IMAGE_ORIGIN + "/" + text.slice("/images/".length);
+  if (text.startsWith("/images/points/") || text.startsWith("/images/user/")) return ANITABI_IMAGE_ORIGIN + "/" + text.slice("/images/".length);
   if (text.startsWith("/")) return ANITABI_ORIGIN + text;
   return text;
 }

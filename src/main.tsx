@@ -776,7 +776,7 @@ function SearchResults({ open, results, query, onLoad, t }) {
           <div className="search-results">
             {results.map((result) => (
               <button key={result.id} type="button" className="search-result" onClick={() => onLoad(result.id)}>
-                {result.cover ? <img src={result.cover} alt="" /> : <span className="cover-placeholder"><Icon name="map" /></span>}
+                {result.cover ? <img src={core.toImageThumbnailUrl(result.cover)} alt="" /> : <span className="cover-placeholder"><Icon name="map" /></span>}
                 <div>
                   <div className="result-title">{core.firstText(result.cn, result.title, result.id)}</div>
                   <div className="result-meta">{result.title} · {t("workId", { id: result.id })} · {result.city || t("unknownArea")}</div>
@@ -797,7 +797,7 @@ function CurrentWork({ work, points, selectedPointIds, setSelectedPointIds, addS
   return (
     <div className="current-work">
       <div className="work-summary">
-        {work.cover ? <img className="work-cover" src={work.cover} alt="" /> : <div className="work-cover" />}
+        {work.cover ? <img className="work-cover" src={core.toImageThumbnailUrl(work.cover)} alt="" /> : <div className="work-cover" />}
         <div>
           <h2>{core.workDisplayName(work)}</h2>
           <p>{work.title} · ID {work.id}</p>
@@ -846,7 +846,7 @@ function PointItem({ point, checked, onChange, t }) {
     <label className="point-item">
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
       <span className="check-ui" aria-hidden="true" />
-      {point.image ? <img className="point-image" src={point.image} alt="" /> : <div className="point-image" />}
+      {point.image ? <img className="point-image" src={core.toImageThumbnailUrl(point.image)} alt="" /> : <div className="point-image" />}
       <div className="point-info">
         <div className="point-name"><Icon name="locationDot" />{pointTitle(point)}</div>
         <div className="point-meta">
@@ -901,7 +901,7 @@ function WorkGroup({ workId, rows, removeWork, removeKey, t }) {
   return (
     <section className="work-group">
       <div className="work-group-header">
-        {first.work_cover ? <img className="group-cover" src={first.work_cover} alt="" /> : <div className="group-cover"><Icon name="map" /></div>}
+        {first.work_cover ? <img className="group-cover" src={core.toImageThumbnailUrl(first.work_cover)} alt="" /> : <div className="group-cover"><Icon name="map" /></div>}
         <div>
           <div className="work-group-title"><Icon name="star" />{core.firstText(first.work_cn, first.work_title, workId)}</div>
           <div className="result-meta">{t("workId", { id: workId })}</div>

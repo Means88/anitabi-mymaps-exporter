@@ -69,6 +69,36 @@ describe("core export helpers", () => {
     expect(rows[0].image_url).toBe("https://img-tc.anitabi.cn/points/465493/3wvutqu_1755529130489.jpg");
   });
 
+  it("rewrites Anitabi user image paths to the reachable image CDN", () => {
+    const rows = core.buildRows(lite, [
+      {
+        id: "aj3chxn",
+        name: "苫前町乡土资料馆",
+        image: "/images/user/2206/bangumi/465493/points/aj3chxn-1769932682727.jpg",
+        geo: [44.307713, 141.65829]
+      }
+    ]);
+
+    expect(rows[0].image_url).toBe("https://img-tc.anitabi.cn/user/2206/bangumi/465493/points/aj3chxn-1769932682727.jpg");
+  });
+
+  it("adds h160 image plans only for display thumbnails", () => {
+    const imageUrl = "https://img-tc.anitabi.cn/points/465493/3ww2h93_1755529962285.jpg";
+    const rows = core.buildRows(lite, [
+      {
+        id: "3ww2h93",
+        name: "苫前夕阳丘白色沙滩",
+        image: imageUrl,
+        geo: [44.31698, 141.6644]
+      }
+    ]);
+
+    expect(rows[0].image_url).toBe(imageUrl);
+    expect(core.toImageThumbnailUrl(rows[0].image_url)).toBe(imageUrl + "?plan=h160");
+    expect(core.toImageThumbnailUrl(imageUrl + "?foo=bar")).toBe(imageUrl + "?foo=bar&plan=h160");
+    expect(core.toImageThumbnailUrl("https://www.anitabi.cn/images/bangumi/465493.jpg")).toBe("https://www.anitabi.cn/images/bangumi/465493.jpg");
+  });
+
   it("treats numeric zero placeholders as empty data", () => {
     const rows = core.buildRows({ ...lite, cover: 0 }, [
       {
