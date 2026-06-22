@@ -31,15 +31,20 @@ For a local development install:
 ## Usage
 
 1. Open an Anitabi map page, for example `https://www.anitabi.cn/map?bangumiId=465493`.
-2. Click the injected `导出` button, or open the exporter from the extension action.
-3. Review the place list and unselect places you do not need.
-4. Click `加入选中`.
-5. Optionally search another work and add more places.
-6. Download CSV or KML from the temporary list.
+2. Click the injected `导出` button on the Anitabi page, or open the exporter from the extension action.
+3. Confirm the work in `Bangumi ID / Anitabi URL`, or choose a work from `Search works`.
+4. Review the point list. All points are selected by default; use `All`, `None`, or `Invert` if needed.
+5. Click `Add selected {count}` to add the current selection to `Temporary List`.
+6. Optionally choose another work from `Search works` and add more points.
+7. In `Temporary List`, click `Download CSV` or `Download KML`.
+
+## Interface Language
+
+Use the top-right `Language` menu to choose `中`, `EN`, or `日`. Flow labels follow the selected language, for example English uses `Load work`, `Search works`, `Add selected {count}`, `Temporary List`, `Download CSV`, and `Download KML`.
 
 ## Web App Mode
 
-You can use the deployed web page directly. Enter a Bangumi ID or Anitabi map URL, then export CSV/KML with the same multi-work temporary list.
+You can use the deployed web page directly. Enter a Bangumi ID or Anitabi map URL in `Bangumi ID / Anitabi URL`, click `Load work`, then export from the same multi-work `Temporary List`. Web mode also supports `Search works`, `Download CSV`, and `Download KML`.
 
 ## Source Attribution
 
