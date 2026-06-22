@@ -1,5 +1,4 @@
 export const API_BASE = "https://api.anitabi.cn";
-export const SEARCH_INDEX_URL = "https://www.anitabi.cn/d/g.json";
 
 export * from "./types.ts";
 export * from "./text.ts";

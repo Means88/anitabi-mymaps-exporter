@@ -1,6 +1,6 @@
 {
   "name": "anitabi-mymaps-exporter",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "description": "Chrome MV3 extension for exporting Anitabi locations to Google My Maps CSV and KML.",
@@ -13,7 +13,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "package:chrome": "vite build && node scripts/package-chrome-extension.ts",
-    "build:search-index": "node scripts/build-search-index.ts tmp/g.json public/data/search-index.json",
+    "build:geo2025-fallback": "node scripts/build-geo2025-fallback.ts data/geo2025.json data/users.csv public/data/geo2025 public/data/search-index.json",
     "lint": "eslint .",
     "preview": "vite preview --host 127.0.0.1",
     "typecheck": "tsc --noEmit",

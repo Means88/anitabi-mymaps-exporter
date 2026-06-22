@@ -16,7 +16,8 @@ const IS_EXTENSION = location.protocol === "chrome-extension:";
 const IS_STANDALONE = !IS_EMBEDDED;
 const USE_PROXY = !IS_EXTENSION && location.protocol !== "file:";
 const API_BASE = USE_PROXY ? "/api/anitabi" : core.API_BASE;
-const SEARCH_INDEX_URL = USE_PROXY ? "/data/search-index.json" : core.SEARCH_INDEX_URL;
+const SEARCH_INDEX_URL = USE_PROXY ? "/data/search-index.json" : "data/search-index.json";
+const SNAPSHOT_URL = USE_PROXY ? "/api/geo2025" : "data/geo2025/works/";
 const GITHUB_PROJECT_URL = "https://github.com/Means88/anitabi-mymaps-exporter";
 const CHROME_WEB_STORE_URL = "https://chromewebstore.google.com/detail/anitabi-my-maps-exporter/fdhehgohnlgdlnhbngagpbcedfmnncee";
 
@@ -279,6 +280,29 @@ function extractBangumiId(input) {
   }
 }
 
+function normalizeHostWorkData(raw, fallbackId = "") {
+  if (!raw || typeof raw !== "object") return null;
+  const source = raw as Record<string, any>;
+  const rawWork = source.work && typeof source.work === "object" ? source.work : {};
+  const rawPoints = Array.isArray(source.points) ? source.points : Array.isArray(rawWork.points) ? rawWork.points : [];
+  const workInput = {
+    ...rawWork,
+    id: rawWork.id || fallbackId,
+    pointsLength: Number(rawWork.pointsLength) || rawPoints.length,
+    litePoints: Array.isArray(rawWork.litePoints) ? rawWork.litePoints : rawPoints
+  };
+  const work = core.normalizeBangumiLite(workInput);
+  const points = core.normalizeDetailPoints(rawPoints);
+  if (!work.id || !points.length) return null;
+  return { work, points };
+}
+
+function normalizeSnapshotWorkData(snapshot, fallbackId = "") {
+  if (!snapshot || typeof snapshot !== "object") return null;
+  if (snapshot.work || snapshot.points) return normalizeHostWorkData(snapshot, fallbackId);
+  return null;
+}
+
 function hasChromeDownloads() {
   return typeof chrome !== "undefined" && chrome.downloads && typeof chrome.downloads.download === "function";
 }
@@ -286,6 +310,11 @@ function hasChromeDownloads() {
 function pointTitle(point) {
   return core.firstText(point.cn, point.name, point.id);
 }
+
+type HostWorkRequest = {
+  resolve: (value: unknown | null) => void;
+  timeout: number;
+};
 
 function App() {
   const [language, setLanguage] = useState<Language>(() => normalizeLanguage(APP_PARAMS.get("lang") || APP_PARAMS.get("language") || readStoredLanguage()));
@@ -305,6 +334,9 @@ function App() {
   const [searchResults, setSearchResults] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchIndexRef = useRef(null);
+  const snapshotRef = useRef(new Map());
+  const hostRequestSeqRef = useRef(0);
+  const hostWorkRequestsRef = useRef(new Map<string, HostWorkRequest>());
   const loading = loadingCount > 0;
   const t = useCallback((key: MessageKey, values?: Record<string, string | number>) => translate(language, key, values), [language]);
 
@@ -356,6 +388,49 @@ function App() {
     };
   }, [fetchJson]);
 
+  const fetchSnapshotById = useCallback(async (bangumiId) => {
+    const cacheKey = core.asText(bangumiId);
+    if (snapshotRef.current.has(cacheKey)) return snapshotRef.current.get(cacheKey);
+    const url = USE_PROXY ? SNAPSHOT_URL + "?bangumiId=" + encodeURIComponent(cacheKey) : SNAPSHOT_URL + encodeURIComponent(cacheKey) + ".json";
+    const snapshot = await fetchJson(url);
+    snapshotRef.current.set(cacheKey, snapshot);
+    return snapshot;
+  }, [fetchJson]);
+
+  const fetchSnapshotWorkData = useCallback(async (id) => {
+    const bangumiId = extractBangumiId(id);
+    const snapshot = await fetchSnapshotById(bangumiId);
+    return normalizeSnapshotWorkData(snapshot, bangumiId);
+  }, [fetchSnapshotById]);
+
+  const requestHostWorkData = useCallback((bangumiId) => {
+    if (!IS_EMBEDDED || !bangumiId || window.parent === window) return Promise.resolve(null);
+    const requestId = "work-" + Date.now() + "-" + (++hostRequestSeqRef.current);
+    return new Promise((resolve) => {
+      const timeout = window.setTimeout(() => {
+        hostWorkRequestsRef.current.delete(requestId);
+        resolve(null);
+      }, 1500);
+      hostWorkRequestsRef.current.set(requestId, { resolve, timeout });
+      window.parent.postMessage({
+        type: "anitabi-exporter-request-work",
+        requestId,
+        bangumiId
+      }, "*");
+    });
+  }, []);
+
+  const applyWorkData = useCallback((data, fallbackId = "") => {
+    const normalized = normalizeHostWorkData(data, fallbackId);
+    if (!normalized) return null;
+    setCurrentWork(normalized.work);
+    setCurrentPoints(normalized.points);
+    setSelectedPointIds(new Set(normalized.points.map((point) => point.id)));
+    setBangumiInput(normalized.work.id || fallbackId);
+    announce(t("loadedWork", { name: core.workDisplayName(normalized.work), count: normalized.points.length }));
+    return normalized;
+  }, [announce, t]);
+
   const fetchSingleHostPoint = useCallback(async (id, pointId) => {
     const bangumiId = extractBangumiId(id);
     const raw = await fetchJson(API_BASE + "/bangumi/" + encodeURIComponent(bangumiId) + "/points");
@@ -363,11 +438,16 @@ function App() {
     return core.normalizeDetailPoints(source).find((point) => point.id === core.asText(pointId)) || null;
   }, [fetchJson]);
 
-  const loadWorkById = useCallback(async (id) => {
+  const loadWorkById = useCallback(async (id, hostWorkData = null) => {
     const bangumiId = extractBangumiId(id);
     if (!bangumiId) {
       announce(t("promptBangumi"));
       return null;
+    }
+    const preferredWorkData = hostWorkData || await requestHostWorkData(bangumiId);
+    if (preferredWorkData) {
+      const data = applyWorkData(preferredWorkData, bangumiId);
+      if (data) return data;
     }
     announce(t("loadApi", { id: bangumiId }));
     try {
@@ -379,13 +459,26 @@ function App() {
       announce(t("loadedWork", { name: core.workDisplayName(data.work), count: data.points.length }));
       return data;
     } catch (error) {
+      try {
+        const snapshotData = await fetchSnapshotWorkData(bangumiId);
+        if (snapshotData) {
+          setCurrentWork(snapshotData.work);
+          setCurrentPoints(snapshotData.points);
+          setSelectedPointIds(new Set(snapshotData.points.map((point) => point.id)));
+          setBangumiInput(snapshotData.work.id || bangumiId);
+          announce(t("loadedWork", { name: core.workDisplayName(snapshotData.work), count: snapshotData.points.length }));
+          return snapshotData;
+        }
+      } catch (_snapshotError) {
+        // Fall through to the original API error message.
+      }
       setCurrentWork(null);
       setCurrentPoints([]);
       setSelectedPointIds(new Set());
       announce(t("loadFailed", { message: error.message }));
       return null;
     }
-  }, [announce, fetchWorkData, t]);
+  }, [announce, applyWorkData, fetchSnapshotWorkData, fetchWorkData, requestHostWorkData, t]);
 
   const ensureSearchIndex = useCallback(async () => {
     if (searchIndexRef.current) return searchIndexRef.current;
@@ -429,7 +522,7 @@ function App() {
     addRowsToCart(currentWork, currentPoints, selectedPointIds);
   }, [addRowsToCart, currentPoints, currentWork, selectedPointIds]);
 
-  const addFromHostPage = useCallback(async (rawBangumiId, pointId) => {
+  const addFromHostPage = useCallback(async (rawBangumiId, pointId, hostWorkData = null) => {
     const bangumiId = extractBangumiId(rawBangumiId || bangumiInput);
     if (!bangumiId) {
       announce(t("noHostWork"));
@@ -438,7 +531,7 @@ function App() {
     let work = currentWork;
     let points = currentPoints;
     if (!work || work.id !== bangumiId || !points.length) {
-      const data = await loadWorkById(bangumiId);
+      const data = await loadWorkById(bangumiId, hostWorkData);
       if (!data) return;
       work = data.work;
       points = data.points;
@@ -458,21 +551,37 @@ function App() {
   }, [addRowsToCart, announce, bangumiInput, currentPoints, currentWork, fetchSingleHostPoint, loadWorkById, t]);
 
   useEffect(() => {
-    if (INITIAL_BANGUMI_ID) {
+    if (INITIAL_BANGUMI_ID && !IS_EMBEDDED) {
       loadWorkById(INITIAL_BANGUMI_ID);
     }
   }, [loadWorkById]);
 
   useEffect(() => {
+    const hostRequests = hostWorkRequestsRef.current;
     const handleMessage = (event) => {
       const message = event.data;
       if (!message || typeof message !== "object") return;
-      if (message.type === "anitabi-exporter-add-current-work") addFromHostPage(message.bangumiId, "");
-      if (message.type === "anitabi-exporter-add-point") addFromHostPage(message.bangumiId, message.pointId);
-      if (message.type === "anitabi-exporter-load-work") loadWorkById(message.bangumiId);
+      if (message.type === "anitabi-exporter-work-response") {
+        const pending = hostRequests.get(core.asText(message.requestId));
+        if (!pending) return;
+        window.clearTimeout(pending.timeout);
+        hostRequests.delete(core.asText(message.requestId));
+        pending.resolve(message.hostWorkData || null);
+        return;
+      }
+      if (message.type === "anitabi-exporter-add-current-work") addFromHostPage(message.bangumiId, "", message.hostWorkData);
+      if (message.type === "anitabi-exporter-add-point") addFromHostPage(message.bangumiId, message.pointId, message.hostWorkData);
+      if (message.type === "anitabi-exporter-load-work") loadWorkById(message.bangumiId, message.hostWorkData);
     };
     window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
+    return () => {
+      window.removeEventListener("message", handleMessage);
+      hostRequests.forEach((pending) => {
+        window.clearTimeout(pending.timeout);
+        pending.resolve(null);
+      });
+      hostRequests.clear();
+    };
   }, [addFromHostPage, loadWorkById]);
 
   const rows = useMemo(() => Array.from(cart.values()), [cart]);

@@ -56,6 +56,45 @@ describe("core export helpers", () => {
     expect(kml).toContain("CC BY-NC-SA 4.0");
   });
 
+  it("rewrites Anitabi image paths to the reachable image CDN", () => {
+    const rows = core.buildRows(lite, [
+      {
+        id: "3wvutqu",
+        name: "しょさんべつ天文台",
+        image: "/images/points/465493/3wvutqu_1755529130489.jpg",
+        geo: [44.562556, 141.774344]
+      }
+    ]);
+
+    expect(rows[0].image_url).toBe("https://img-tc.anitabi.cn/points/465493/3wvutqu_1755529130489.jpg");
+  });
+
+  it("treats numeric zero placeholders as empty data", () => {
+    const rows = core.buildRows({ ...lite, cover: 0 }, [
+      {
+        id: "3wvutqu",
+        name: "しょさんべつ天文台",
+        cn: 0,
+        image: 0,
+        origin: 0,
+        originLink: 0,
+        geo: [44.562556, 141.774344]
+      }
+    ]);
+
+    expect(rows[0].work_cover).toBe("");
+    expect(rows[0].point_cn).toBe("");
+    expect(rows[0].image_url).toBe("");
+    expect(rows[0].origin_url).toBe("");
+    expect(rows[0].origin).toBe("Unknown");
+  });
+
+  it("upgrades absolute http resource URLs to https", () => {
+    const rows = core.buildRows(lite, points);
+
+    expect(rows[0].work_cover).toBe("https://lain.bgm.tv/pic/cover/l/cc/5d/465493_e3A48.jpg?plan=h160");
+  });
+
   it("localizes KML work and point names from the UI language", () => {
     const rows = core.buildRows({ ...lite, cn: "中文作品", title: "Original Work" }, points);
 
@@ -78,7 +117,7 @@ describe("core export helpers", () => {
 });
 
 describe("core search helpers", () => {
-  it("parses original g.json arrays", () => {
+  it("parses legacy array search payloads", () => {
     const index = core.parseSearchIndex([
       [
         [465493, "", 0, "anemoi", "北海道", "#65c3c2", "/images/bangumi/465493.jpg", 0, "TV", 0, 0, 0, ["a", 1, 2, 3], 0, [], 464],

@@ -1,6 +1,9 @@
 (function injectAnitabiExporterPanel() {
   const ROOT_ID = "anitabi-mymaps-export-root";
   const POINT_BUTTON_CLASS = "anitabi-mymaps-point-add";
+  const ANITABI_DB_NAME = "anitabi";
+  const ANITABI_DB_STORE = "data";
+  const ANITABI_GEO_CACHE_KEY = "geo2025";
   const API_BASE = "https://api.anitabi.cn";
   if (document.getElementById(ROOT_ID)) return;
 
@@ -12,14 +15,55 @@
   let decorateTimer = 0;
   const pendingMessages: Record<string, unknown>[] = [];
   const pointCache = new Map<string, Promise<HostPoint[]>>();
+  let geoCachePromise: Promise<AnitabiGeoCache | null> | null = null;
+  let usersPromise: Promise<Map<string, string>> | null = null;
 
   interface HostPoint {
     id: string;
     cn: string;
     name: string;
     image: string;
+    ep: string;
+    s: string;
     mark: string;
     geo: unknown;
+    origin: string;
+    originLink: string;
+    originURL: string;
+    folder: string;
+    fid: string;
+    mid: string;
+    uid: string;
+    isFolder: unknown;
+    density: unknown;
+  }
+
+  interface HostWork {
+    id: string;
+    cn: string;
+    title: string;
+    city: string;
+    cover: string;
+    color: string;
+    geo: unknown;
+    zoom: unknown;
+    modified: unknown;
+    pointsLength: number;
+    imagesLength: number;
+    litePoints: HostPoint[];
+    points: HostPoint[];
+  }
+
+  interface HostWorkData {
+    source: "indexeddb";
+    modified: unknown;
+    work: HostWork;
+    points: HostPoint[];
+  }
+
+  interface AnitabiGeoCache {
+    bangumis?: unknown[];
+    modified?: unknown;
   }
 
   const root = document.createElement("div");
@@ -69,6 +113,53 @@
     return value == null ? "" : String(value);
   }
 
+  function asDataText(value: unknown) {
+    if (value === 0) return "";
+    return asText(value);
+  }
+
+  function parseUsersCsv(text: string) {
+    const users = new Map<string, string>();
+    text.split(/\r?\n/).forEach((line) => {
+      if (!line) return;
+      const commaIndex = line.indexOf(",");
+      if (commaIndex <= 0) return;
+      const id = line.slice(0, commaIndex).trim();
+      const nickname = line.slice(commaIndex + 1).trim();
+      if (id && nickname) users.set(id, nickname);
+    });
+    return users;
+  }
+
+  function readAnitabiUsers(): Promise<Map<string, string>> {
+    if (usersPromise) return usersPromise;
+    usersPromise = fetch("/d/users.csv?d=" + Date.now().toString(36), { cache: "force-cache" })
+      .then((response) => response.ok ? response.text() : "")
+      .then(parseUsersCsv)
+      .catch(() => new Map());
+    return usersPromise;
+  }
+
+  function sourceText(raw: Record<string, unknown>, users: Map<string, string> = new Map()) {
+    const origin = asDataText(raw.origin);
+    if (origin) return origin;
+    const uid = asDataText(raw.uid);
+    if (uid) return "@" + (users.get(uid) || uid);
+    if (asDataText(raw.mid)) return "Google My Maps";
+    return "";
+  }
+
+  function sourceLink(raw: Record<string, unknown>) {
+    const explicit = asDataText(raw.originURL || raw.originLink);
+    if (explicit) return explicit;
+    const mid = asDataText(raw.mid);
+    const geo = raw.geo;
+    if (mid && Array.isArray(geo) && geo.length >= 2) {
+      return "https://www.google.com/maps/d/viewer?mid=" + encodeURIComponent(mid) + "&ll=" + encodeURIComponent(asText(geo[0])) + "%2C" + encodeURIComponent(asText(geo[1]));
+    }
+    return "";
+  }
+
   function currentBangumiId() {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -93,6 +184,27 @@
     target.postMessage(Object.assign({ bangumiId: currentBangumiId() }, message), "*");
   }
 
+  async function postWorkMessage(message) {
+    const bangumiId = currentBangumiId();
+    const hostWorkData = bangumiId ? await readCachedWorkData(bangumiId) : null;
+    postToApp(Object.assign({}, message, hostWorkData ? { hostWorkData } : null));
+  }
+
+  async function handleAppMessage(event) {
+    if (event.source !== frameWindow()) return;
+    const message = event.data;
+    if (!message || typeof message !== "object") return;
+    if (message.type !== "anitabi-exporter-request-work") return;
+    const bangumiId = asText(message.bangumiId);
+    const hostWorkData = bangumiId ? await readCachedWorkData(bangumiId) : null;
+    postToApp({
+      type: "anitabi-exporter-work-response",
+      requestId: message.requestId,
+      requestedBangumiId: bangumiId,
+      hostWorkData
+    });
+  }
+
   function flushMessages() {
     while (pendingMessages.length) {
       const message = pendingMessages.shift();
@@ -104,7 +216,7 @@
     panelOpen = nextOpen;
     root.classList.toggle("is-open", panelOpen);
     document.getElementById("anitabi-mymaps-fab").setAttribute("aria-expanded", panelOpen ? "true" : "false");
-    if (panelOpen && frameLoaded && currentBangumiId()) postToApp({ type: "anitabi-exporter-load-work" });
+    if (panelOpen && frameLoaded && currentBangumiId()) postWorkMessage({ type: "anitabi-exporter-load-work" });
   }
 
   function isPointId(value) {
@@ -129,31 +241,126 @@
     return asText(value).replace(/\u200b/g, "").replace(/\s+/g, "").trim().toLowerCase();
   }
 
-  function normalizeHostPoint(raw: Record<string, unknown>): HostPoint | null {
+  function normalizeHostPoint(raw: Record<string, unknown>, users: Map<string, string> = new Map()): HostPoint | null {
     if (!raw || !isPointId(raw.id)) return null;
     return {
       id: asText(raw.id),
-      cn: asText(raw.cn),
-      name: asText(raw.name),
-      image: asText(raw.image),
-      mark: asText(raw.mark),
-      geo: raw.geo
+      cn: asDataText(raw.cn),
+      name: asDataText(raw.name),
+      image: asDataText(raw.image),
+      ep: asDataText(raw.ep),
+      s: asDataText(raw.s),
+      mark: asDataText(raw.mark),
+      geo: raw.geo,
+      origin: sourceText(raw, users),
+      originLink: sourceLink(raw),
+      originURL: sourceLink(raw),
+      folder: asDataText(raw.folder),
+      fid: asDataText(raw.fid),
+      mid: asDataText(raw.mid),
+      uid: asDataText(raw.uid),
+      isFolder: raw.isFolder,
+      density: raw.density
     };
   }
 
-  function loadHostPoints(workId) {
+  function normalizeHostWork(raw: Record<string, unknown>, users: Map<string, string> = new Map()): HostWork | null {
+    const id = asText(raw && raw.id);
+    if (!id) return null;
+    const points = Array.isArray(raw.points) ? raw.points.map((point) => normalizeHostPoint(point, users)).filter(Boolean) as HostPoint[] : [];
+    return {
+      id,
+      cn: asDataText(raw.cn),
+      title: asDataText(raw.title),
+      city: asDataText(raw.city),
+      cover: asDataText(raw.cover),
+      color: asDataText(raw.color),
+      geo: raw.geo,
+      zoom: raw.zoom,
+      modified: raw.modified,
+      pointsLength: points.length || Number(raw.pointsLength) || 0,
+      imagesLength: points.filter((point) => point.image).length,
+      litePoints: points,
+      points
+    };
+  }
+
+  function readAnitabiGeoCache(): Promise<AnitabiGeoCache | null> {
+    if (geoCachePromise) return geoCachePromise;
+    geoCachePromise = new Promise((resolve) => {
+      if (!window.indexedDB) {
+        resolve(null);
+        return;
+      }
+      const request = indexedDB.open(ANITABI_DB_NAME);
+      request.onerror = () => resolve(null);
+      request.onsuccess = () => {
+        const db = request.result;
+        try {
+          if (!db.objectStoreNames.contains(ANITABI_DB_STORE)) {
+            db.close();
+            resolve(null);
+            return;
+          }
+          const tx = db.transaction(ANITABI_DB_STORE, "readonly");
+          const getRequest = tx.objectStore(ANITABI_DB_STORE).get(ANITABI_GEO_CACHE_KEY);
+          getRequest.onerror = () => resolve(null);
+          getRequest.onsuccess = () => {
+            const record = getRequest.result;
+            resolve(record && record.data && Array.isArray(record.data.bangumis) ? record.data : null);
+          };
+          tx.oncomplete = () => db.close();
+          tx.onerror = () => {
+            db.close();
+            resolve(null);
+          };
+        } catch (_error) {
+          db.close();
+          resolve(null);
+        }
+      };
+    }).then((cache) => {
+      if (!cache) geoCachePromise = null;
+      return cache;
+    });
+    return geoCachePromise;
+  }
+
+  async function readCachedWorkData(workId): Promise<HostWorkData | null> {
+    const [cache, users] = await Promise.all([readAnitabiGeoCache(), readAnitabiUsers()]);
+    const bangumis = cache && Array.isArray(cache.bangumis) ? cache.bangumis : [];
+    const rawWork = bangumis.find((work) => asText((work as Record<string, unknown>).id) === asText(workId)) as Record<string, unknown> | undefined;
+    const work = rawWork ? normalizeHostWork(rawWork, users) : null;
+    if (!work || !work.points.length) return null;
+    return {
+      source: "indexeddb",
+      modified: cache && cache.modified,
+      work,
+      points: work.points
+    };
+  }
+
+  function fetchHostPoints(workId): Promise<HostPoint[]> {
     if (!workId) return Promise.resolve([]);
     if (!pointCache.has(workId)) {
       const url = API_BASE + "/bangumi/" + encodeURIComponent(workId) + "/points";
-      pointCache.set(workId, fetch(url, { cache: "no-store" })
-        .then((response) => response.ok ? response.json() : [])
-        .then((raw) => {
+      pointCache.set(workId, Promise.all([
+        fetch(url, { cache: "no-store" }).then((response) => response.ok ? response.json() : []).catch(() => []),
+        readAnitabiUsers()
+      ])
+        .then(([raw, users]) => {
           const source = Array.isArray(raw) ? raw : Array.isArray(raw && raw.points) ? raw.points : [];
-          return source.map(normalizeHostPoint).filter(Boolean) as HostPoint[];
+          return source.map((point) => normalizeHostPoint(point, users)).filter(Boolean) as HostPoint[];
         })
         .catch(() => []));
     }
     return pointCache.get(workId);
+  }
+
+  async function loadHostPoints(workId) {
+    const cached = await readCachedWorkData(workId);
+    if (cached) return cached.points;
+    return fetchHostPoints(workId);
   }
 
   function readPointIdFromImageUrl(url, points: HostPoint[] = []) {
@@ -246,7 +453,7 @@
       event.preventDefault();
       event.stopPropagation();
       setOpen(true);
-      postToApp({ type: "anitabi-exporter-add-point", pointId });
+      postWorkMessage({ type: "anitabi-exporter-add-point", pointId });
       button.classList.add("is-added");
       window.setTimeout(() => {
         button.classList.remove("is-added");
@@ -333,12 +540,12 @@
   document.getElementById("anitabi-mymaps-close").addEventListener("click", () => setOpen(false));
   document.getElementById("anitabi-mymaps-add-work").addEventListener("click", () => {
     setOpen(true);
-    postToApp({ type: "anitabi-exporter-add-current-work" });
+    postWorkMessage({ type: "anitabi-exporter-add-current-work" });
   });
   document.getElementById("anitabi-mymaps-frame").addEventListener("load", () => {
     frameLoaded = true;
     flushMessages();
-    if (panelOpen && currentBangumiId()) postToApp({ type: "anitabi-exporter-load-work" });
+    if (panelOpen && currentBangumiId()) postWorkMessage({ type: "anitabi-exporter-load-work" });
   });
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -353,6 +560,7 @@
   observer.observe(document.body, { childList: true, subtree: true });
   window.addEventListener("popstate", decoratePointNodes);
   window.addEventListener("hashchange", decoratePointNodes);
+  window.addEventListener("message", handleAppMessage);
   document.addEventListener("click", () => window.setTimeout(decoratePointNodes, 120), true);
   window.setInterval(decoratePointNodes, 1000);
 })();

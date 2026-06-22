@@ -60,7 +60,6 @@
     "tabs"
   ],
   "host_permissions": [
-    "https://api.anitabi.cn/*",
-    "https://www.anitabi.cn/d/g.json"
+    "https://api.anitabi.cn/*"
   ]
 }

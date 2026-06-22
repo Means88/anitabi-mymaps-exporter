@@ -37,12 +37,11 @@ The extension does not use user data for advertising, tracking, profiling, analy
 
 The extension does not sell, rent, or transfer user data to advertising platforms, data brokers, analytics services, or other information resellers.
 
-The extension makes network requests to the following Anitabi endpoints in order to provide its core export functionality:
+The extension may make network requests to the following Anitabi endpoint in order to provide its core export functionality:
 
 - `https://api.anitabi.cn/*`
-- `https://www.anitabi.cn/d/g.json`
 
-These requests are used to retrieve Anitabi work, search, and location data selected or requested by the user. The extension does not send exported CSV/KML files to any server.
+These requests are used to retrieve Anitabi work and location data selected or requested by the user when local page data or bundled fallback data is unavailable. The extension does not send exported CSV/KML files to any server.
 
 Generated CSV and KML files are saved locally through the browser download flow.
 
@@ -68,7 +67,6 @@ The extension requests the narrowest permissions needed for its export workflow:
 - `tabs`: Used to read the active tab URL so the extension can detect the current `bangumiId`.
 - `downloads`: Used to save generated CSV and KML files through Chrome's download API.
 - `https://api.anitabi.cn/*`: Used to fetch Anitabi work and location data needed for exports.
-- `https://www.anitabi.cn/d/g.json`: Used to fetch the Anitabi search index for work search.
 
 The content script is limited to:
 

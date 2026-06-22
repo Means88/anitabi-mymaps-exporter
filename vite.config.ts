@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { spawnSync } from "node:child_process";
 
 const extensionEntries = new Set(["background", "content"]);
 
@@ -10,13 +11,35 @@ export default defineConfig({
   plugins: [
     react(),
     {
+      name: "anitabi-exporter-build-fallback-data",
+      apply: "build",
+      buildStart() {
+        const result = spawnSync(process.execPath, [
+          "scripts/build-geo2025-fallback.ts",
+          "data/geo2025.json",
+          "data/users.csv",
+          "public/data/geo2025",
+          "public/data/search-index.json"
+        ], {
+          cwd: __dirname,
+          stdio: "inherit"
+        });
+        if (result.status !== 0) {
+          throw new Error("Failed to build geo2025 fallback data before Vite build");
+        }
+      }
+    },
+    {
       name: "anitabi-exporter-assets",
       configureServer(server) {
-        server.middlewares.use("/api/search-index", (_request, response) => {
+        server.middlewares.use("/api/geo2025", (request, response) => {
+          const requestUrl = new URL(request.url || "/api/geo2025", "http://localhost");
+          const bangumiId = requestUrl.searchParams.get("bangumiId") || "";
+          const assetPath = /^\d+$/.test(bangumiId) ? `public/data/geo2025/works/${bangumiId}.json` : "public/data/geo2025/manifest.json";
           response.statusCode = 200;
           response.setHeader("content-type", "application/json; charset=utf-8");
           response.setHeader("cache-control", "no-store");
-          response.end(readFileSync("public/data/search-index.json"));
+          response.end(readFileSync(assetPath));
         });
       }
     }

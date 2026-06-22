@@ -6,6 +6,11 @@ interface LooseRecord {
   [key: string]: any;
 }
 
+function asDataText(value: unknown): string {
+  if (value === 0) return "";
+  return asText(value);
+}
+
 export function normalizeGeo(geo: unknown): GeoTuple | null {
   if (!Array.isArray(geo) || geo.length < 2) return null;
   if (asText(geo[0]).trim() === "" || asText(geo[1]).trim() === "") return null;
@@ -18,11 +23,11 @@ export function normalizeGeo(geo: unknown): GeoTuple | null {
 export function normalizeBangumiLite(raw: LooseRecord = {}): NormalizedWork {
   return {
     id: asText(raw.id),
-    cn: asText(raw.cn),
-    title: asText(raw.title),
-    city: asText(raw.city),
+    cn: asDataText(raw.cn),
+    title: asDataText(raw.title),
+    city: asDataText(raw.city),
     cover: toAbsoluteAnitabiUrl(raw.cover),
-    color: asText(raw.color),
+    color: asDataText(raw.color),
     geo: normalizeGeo(raw.geo),
     zoom: raw.zoom,
     modified: raw.modified,
@@ -40,14 +45,14 @@ export function normalizeDetailPoints(points: unknown): NormalizedPoint[] {
       if (!point || !point.id || !geo) return null;
       return {
         id: asText(point.id),
-        cn: asText(point.cn),
-        name: asText(point.name),
+        cn: asDataText(point.cn),
+        name: asDataText(point.name),
         image: toAbsoluteAnitabiUrl(point.image),
-        ep: asText(point.ep),
-        s: asText(point.s),
+        ep: asDataText(point.ep),
+        s: asDataText(point.s),
         geo,
-        origin: asText(point.origin),
-        originURL: asText(point.originURL || point.originLink)
+        origin: asDataText(point.origin),
+        originURL: asDataText(point.originURL || point.originLink)
       };
     })
     .filter(Boolean) as NormalizedPoint[];

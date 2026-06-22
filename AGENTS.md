@@ -12,9 +12,10 @@ Anitabi My Maps Exporter is a shared React + TypeScript UI plus a Chrome Manifes
 - Chrome extension shell: `manifest.json`, `src/extension/`, `src/popup.html`, `src/app.html`
 - Cloudflare Pages Functions:
   - `functions/api/anitabi/[[path]].ts` proxies stable Anitabi API detail routes.
-  - `functions/api/search-index.ts` returns the local static search index for compatibility.
+  - `functions/api/geo2025.ts` returns static per-work fallback data.
+- Static fallback data: `public/data/geo2025/`
 - Static search index: `public/data/search-index.json`
-- Search index generator: `scripts/build-search-index.ts`
+- Snapshot/search generator: `scripts/build-geo2025-fallback.ts`
 
 ## Development
 
@@ -29,18 +30,21 @@ corepack pnpm build
 corepack pnpm test
 ```
 
-Vite dev serves the web app and locally maps `/api/search-index` to `public/data/search-index.json`. `/api/anitabi/*` proxies `https://api.anitabi.cn/*`.
+Vite dev serves the web app with static assets from `public/`, locally maps `/api/geo2025` to `public/data/geo2025`, and proxies `/api/anitabi/*` to `https://api.anitabi.cn/*`.
 
-## Search Index
+## Snapshot And Search Index
 
-The app does not proxy `https://www.anitabi.cn/d/g.json` at runtime on Cloudflare Pages. Refresh the local trimmed index manually:
+The app does not request the old main-site search endpoint at runtime. Refresh the static fallback and search index from an exported Anitabi IndexedDB `geo2025` snapshot:
 
 ```sh
-curl -L https://www.anitabi.cn/d/g.json -o tmp/g.json
-corepack pnpm build:search-index
+cp /path/to/anitabi-geo2025.json data/geo2025.json
+curl -L "https://www.anitabi.cn/d/users.csv?d=qixb" -o data/users.csv
+corepack pnpm build:geo2025-fallback
 ```
 
-The generated index keeps only fields needed for work search:
+`vite build`, `corepack pnpm build`, and `corepack pnpm package:chrome` run the same snapshot generator before bundling, so `data/geo2025.json` and `data/users.csv` must exist for production builds.
+
+The generated search index keeps only fields needed for work search:
 
 - `id`
 - `cn`
@@ -50,7 +54,7 @@ The generated index keeps only fields needed for work search:
 - `cover`
 - `pointsLength`
 
-Keep `tmp/g.json` out of git; it is ignored.
+The generated fallback splits work detail into `public/data/geo2025/works/{bangumiId}.json` and writes `public/data/geo2025/manifest.json`. Keep `data/geo2025.json` in git as the versioned snapshot input. `data/users.csv` is a build input and should not be placed under `public/`.
 
 ## Cloudflare Pages
 
@@ -70,7 +74,8 @@ Do not use dashboard Direct Upload for normal deploys if Functions are needed. U
 - Final export data should come from stable Anitabi API endpoints:
   - `https://api.anitabi.cn/bangumi/{id}/lite`
   - `https://api.anitabi.cn/bangumi/{id}/points/detail?haveImage=true`
-- The local search index is only for finding works.
+- In the extension environment, prefer Anitabi main-site IndexedDB data when available.
+- Static `geo2025` files and the local search index are fallback data generated from the same snapshot.
 - Preserve origin/originURL in exports and UI where point source data appears.
 - Keep CSV UTF-8 with BOM for Google My Maps compatibility.
 - KML folders should group placemarks by work.
